@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPC — İşçi Portalı</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0f1a;--surface:#111827;--surface2:#1a2236;--surface3:#202d42;
+  --border:#ffffff0f;--border2:#ffffff18;
+  --text:#f0f4ff;--text2:#8b9ab8;--text3:#4d5f7a;
+  --accent:#3b7cf4;--accent2:#5b9bf8;--accentbg:#3b7cf412;
+  --green:#22c77e;--greenbg:#22c77e12;
+  --amber:#f59e0b;--amberbg:#f59e0b12;
+  --red:#ef4444;--redbg:#ef444412;
+  --purple:#a855f7;--purplebg:#a855f712;
+  --gold:#f0b429;
+  --r:10px;--r2:14px
+}
+html{font-size:14px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* LOGIN SCREEN */
+#login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);
+}
+.login-box{
+  background:var(--surface);border:1px solid var(--border2);border-radius:20px;
+  padding:36px 32px;width:100%;max-width:380px;
+}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-mark{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-.5px}
+.login-logo-mark span{color:var(--accent)}
+.login-sub{font-size:13px;color:var(--text3);margin-top:4px}
+.login-title{font-size:18px;font-weight:600;color:var(--text);margin-bottom:6px}
+.login-desc{font-size:13px;color:var(--text3);margin-bottom:24px}
+.form-label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.form-input,.form-select{
+  width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:.15s
+}
+.form-input:focus,.form-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentbg)}
+.form-group{margin-bottom:16px}
+.btn-login{
+  width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;
+  font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;margin-top:4px
+}
+.btn-login:hover{background:var(--accent2)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed}
+.login-error{
+  background:var(--redbg);border:1px solid #ef444430;border-radius:8px;
+  padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:16px;display:none
+}
+.login-divider{text-align:center;color:var(--text3);font-size:12px;margin:20px 0;position:relative}
+.login-divider::before,.login-divider::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--border)}
+.login-divider::before{left:0}.login-divider::after{right:0}
+
+/* MAIN APP */
+#app-screen{display:none}
+.app{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{
+  width:230px;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;height:100vh;z-index:10
+}
+.logo{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.logo-mark{font-size:17px;font-weight:700;color:var(--text)}
+.logo-mark span{color:var(--accent)}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:'DM Mono',monospace}
+.nav{flex:1;padding:14px 8px;overflow-y:auto}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;
+  cursor:pointer;color:var(--text2);font-size:13px;font-weight:400;transition:.15s;
+  border:none;background:none;width:100%;text-align:left
+}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accentbg);color:var(--accent2);font-weight:500}
+.nav-ic{width:16px;height:16px;flex-shrink:0;opacity:.6}
+.nav-item.active .nav-ic{opacity:1}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700}
+
+/* WORKER PROFILE CARD in sidebar */
+.sidebar-profile{
+  padding:16px;border-top:1px solid var(--border);
+  display:flex;flex-direction:column;gap:10px
+}
+.sp-top{display:flex;align-items:center;gap:10px}
+.sp-avatar{
+  width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;flex-shrink:0
+}
+.sp-name{font-size:13px;font-weight:600;color:var(--text)}
+.sp-role{font-size:11px;color:var(--text3)}
+.sp-pts{
+  background:var(--accentbg);border:1px solid var(--border2);border-radius:8px;
+  padding:8px 12px;display:flex;justify-content:space-between;align-items:center
+}
+.sp-pts-val{font-size:18px;font-weight:700;color:var(--accent2);font-family:'DM Mono',monospace}
+.sp-pts-lbl{font-size:11px;color:var(--text3)}
+.logout-btn{
+  width:100%;padding:7px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;color:var(--text3);font-size:12px;cursor:pointer;transition:.15s;font-family:inherit
+}
+.logout-btn:hover{color:var(--red);border-color:var(--redbg)}
+
+/* MAIN */
+.main{margin-left:230px;flex:1;display:flex;flex-direction:column}
+.header{
+  padding:16px 24px;border-bottom:1px solid var(--border);background:var(--surface);
+  position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center
+}
+.page-title{font-size:16px;font-weight:600;color:var(--text)}
+.page-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.content{padding:22px 26px}
+.page{display:none}.page.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+
+/* METRICS */
+.metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px}
+.metric-card.blue::before{background:var(--accent)}
+.metric-card.green::before{background:var(--green)}
+.metric-card.amber::before{background:var(--amber)}
+.metric-card.purple::before{background:var(--purple)}
+.m-label{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.m-val{font-size:26px;font-weight:700;color:var(--text);margin:4px 0 2px;font-family:'DM Mono',monospace}
+.m-sub{font-size:11px;color:var(--text3)}
+
+/* TASK LIST */
+.task-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;transition:.15s}
+.task-row:hover{background:var(--surface2)}
+.task-check{
+  width:18px;height:18px;border:1.5px solid var(--border2);border-radius:5px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:.15s
+}
+.task-check.done{background:var(--green);border-color:var(--green);color:#fff}
+.task-name{flex:1;font-size:13px;color:var(--text)}
+.task-name.done{color:var(--text3);text-decoration:line-through}
+.task-pts{font-size:12px;font-weight:700;color:var(--green)}
+.prio-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.p-high{background:var(--red)}.p-med{background:var(--amber)}.p-low{background:var(--green)}
+.dl-badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+.dl-ok{background:var(--greenbg);color:var(--green)}
+.dl-warn{background:var(--amberbg);color:var(--amber)}
+.dl-over{background:var(--redbg);color:var(--red)}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.b-green{background:var(--greenbg);color:var(--green)}
+.b-amber{background:var(--amberbg);color:var(--amber)}
+.b-red{background:var(--redbg);color:var(--red)}
+.b-blue{background:var(--accentbg);color:var(--accent2)}
+.b-gray{background:var(--surface2);color:var(--text2)}
+
+/* HISTORY */
+.hist-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.hist-name{flex:1;font-size:13px;color:var(--text2)}
+.hist-pts{font-size:14px;font-weight:700;color:var(--green);font-family:'DM Mono',monospace}
+.hist-date{font-size:11px;color:var(--text3)}
+
+/* RANK */
+.rank-box{
+  background:linear-gradient(135deg,var(--accentbg),var(--purplebg));
+  border:1px solid var(--border2);border-radius:var(--r2);padding:20px;
+  text-align:center;margin-bottom:16px
+}
+.rank-num{font-size:48px;font-weight:800;color:var(--accent2);font-family:'DM Mono',monospace;line-height:1}
+.rank-of{font-size:13px;color:var(--text3);margin-top:4px}
+
+/* PROGRESS RING */
+.ring-wrap{display:flex;justify-content:center;margin-bottom:16px}
+svg.ring{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--surface3);stroke-width:8}
+.ring-fg{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.ring-text{transform:rotate(90deg);transform-origin:center}
+
+/* PROG BAR */
+.prog-bar{height:6px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.prog-fill{height:6px;border-radius:3px;transition:.5s}
+
+/* PROFILE PAGE */
+.profile-hero{
+  display:flex;align-items:center;gap:20px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:24px;margin-bottom:16px
+}
+.ph-avatar{
+  width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:700;flex-shrink:0
+}
+.ph-name{font-size:20px;font-weight:700;color:var(--text)}
+.ph-role{font-size:13px;color:var(--text3);margin-top:3px}
+.ph-meta{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.ph-tag{font-size:12px;padding:4px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;color:var(--text2)}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r2);padding:12px 18px;font-size:13px;color:var(--text);z-index:999;
+  opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{border-left:3px solid var(--green)}
+
+/* TAB BAR */
+.tab-bar{display:flex;gap:2px;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:18px;width:fit-content}
+.tab-btn{padding:6px 14px;border-radius:8px;border:none;background:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit}
+.tab-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-mark"><span>PPC</span> Sistem</div>
+      <div class="login-sub">Pozitiv Psixologiya Mərkəzi</div>
+    </div>
+    <div class="login-title">İşçi Portalı</div>
+    <div class="login-desc">Email və şifrənizlə daxil olun</div>
+    <div class="login-error" id="login-err">Email və ya şifrə yanlışdır</div>
+
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="leyla@ppc.az"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Şifrə</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" id="login-btn" onclick="doLogin()">Daxil ol</button>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app-screen">
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark"><span>PPC</span> Sistem</div>
+      <div class="logo-sub">İşçi Portalı</div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" onclick="gotoPage('overview',this)">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Xülasə
+      </button>
+      <button class="nav-item" onclick="gotoPage('tasks',this)">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        Tapşırıqlarım
+        <span class="nav-badge" id="open-badge">0</span>
+      </button>
+      <button class="nav-item" onclick="gotoPage('history',this)">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Xal Tarixçəsi
+      </button>
+      <button class="nav-item" onclick="gotoPage('rank',this)">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+        Sıralamam
+      </button>
+      <button class="nav-item" onclick="gotoPage('profile',this)">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a4 4 0 014-4h8a4 4 0 014 4v2"/></svg>
+        Profilim
+      </button>
+    </nav>
+
+    <div class="sidebar-profile">
+      <div class="sp-top">
+        <div class="sp-avatar" id="sp-av"></div>
+        <div>
+          <div class="sp-name" id="sp-name">—</div>
+          <div class="sp-role" id="sp-role">—</div>
+        </div>
+      </div>
+      <div class="sp-pts">
+        <div>
+          <div class="sp-pts-lbl">Bu Ayın Xalı</div>
+          <div class="sp-pts-val" id="sp-pts">0</div>
+        </div>
+        <div style="font-size:22px">⭐</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">← Çıxış</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="header">
+      <div>
+        <div class="page-title" id="hdr-title">Xülasə</div>
+        <div class="page-sub" id="hdr-date"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text3)" id="hdr-greeting"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- OVERVIEW PAGE -->
+      <div id="page-overview" class="page active">
+        <div class="metrics-grid" id="ov-metrics"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div class="card">
+              <div class="card-title">Bugünkü Tapşırıqlar</div>
+              <div id="ov-tasks"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Bu Həftə Qazanılan</div>
+              <div id="ov-week"></div>
+            </div>
+          </div>
+          <div>
+            <div class="ring-wrap" id="ov-ring"></div>
+            <div class="card">
+              <div class="card-title">Son Fəaliyyət</div>
+              <div id="ov-activity"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASKS PAGE -->
+      <div id="page-tasks" class="page">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="filterMyTasks('all',this)">Hamısı</button>
+          <button class="tab-btn" onclick="filterMyTasks('open',this)">Açıq</button>
+          <button class="tab-btn" onclick="filterMyTasks('done',this)">Tamamlanmış</button>
+          <button class="tab-btn" onclick="filterMyTasks('overdue',this)">Gecikmiş</button>
+        </div>
+        <div class="card"><div id="task-list"></div></div>
+      </div>
+
+      <!-- HISTORY PAGE -->
+      <div id="page-history" class="page">
+        <div class="metrics-grid" id="hist-metrics"></div>
+        <div class="card">
+          <div class="card-title">Tamamlanmış Tapşırıqlar — Tarixçə</div>
+          <div id="hist-list"></div>
+        </div>
+      </div>
+
+      <!-- RANK PAGE -->
+      <div id="page-rank" class="page">
+        <div id="rank-content"></div>
+      </div>
+
+      <!-- PROFILE PAGE -->
+      <div id="page-profile" class="page">
+        <div id="profile-hero-wrap"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-title">KPI Göstəricilərim</div>
+            <div id="kpi-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Kateqoriyalar üzrə xal</div>
+            <div id="cat-pts"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD-m3D563Lf4sx3bpe0MxdbiZqHRP_0ATw",
+  authDomain: "business-iddare-etme-sistemi.firebaseapp.com",
+  databaseURL: "https://business-iddare-etme-sistemi-default-rtdb.firebaseio.com",
+  projectId: "business-iddare-etme-sistemi",
+  storageBucket: "business-iddare-etme-sistemi.firebasestorage.app",
+  appId: "1:286854322385:web:dba379035c15cb38e2cdf0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+// ─── DEMO DATA ───────────────────────────────────────────────────────────────
+let allWorkers = [
+  {id:'w1',name:'Leyla Əliyeva',role:'Psixoloq',dept:'Klinik Psixologiya',branch:'Baş Ofis',color:'#3b7cf4',pin:'0001'},
+  {id:'w2',name:'Rauf Hüseynov',role:'Zəng Mərkəzi Operatoru',dept:'Zəng Mərkəzi',branch:'Filial 1',color:'#22c77e',pin:'0002'},
+  {id:'w3',name:'Aynur Məmmədova',role:'Diaqnostika Mütəxəssisi',dept:'Klinik Psixologiya',branch:'Baş Ofis',color:'#a855f7',pin:'0003'},
+  {id:'w4',name:'Tural Quliyev',role:'Satış Meneceri',dept:'Satış',branch:'Filial 2',color:'#f59e0b',pin:'0004'},
+  {id:'w5',name:'Sevinc Nəcəfova',role:'Marketinq Meneceri',dept:'Marketinq',branch:'Baş Ofis',color:'#06b6d4',pin:'0005'},
+  {id:'w6',name:'Nigar Rəsulova',role:'Loqoped',dept:'Klinik Psixologiya',branch:'Filial 1',color:'#ef4444',pin:'0006'},
+  {id:'w7',name:'Orxan Babayev',role:'Sosial Media Meneceri',dept:'Marketinq',branch:'Baş Ofis',color:'#f0b429',pin:'0007'},
+  {id:'w8',name:'Günel İsmayılova',role:'Resepsion',dept:'İnzibati',branch:'Baş Ofis',color:'#3b7cf4',pin:'0008'}
+];
+
+let allTasks = [];
+let currentWorker = null;
+let taskFilter = 'all';
+
+function today(){return new Date().toISOString().slice(0,10)}
+function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function initials(n){return n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}
+function getPts(wid){return allTasks.filter(t=>t.done&&t.wid==wid).reduce((s,t)=>s+t.pts,0)}
+function pct(a,b){return b?Math.round(a/b*100):0}
+
+function seedTasks(wid) {
+  const cats = {
+    'w1':['Pasient seans apar','Qiymətləndirmə hesabatı yaz','Günlük qeydlər'],
+    'w2':['20 zəng cavabla','Yeni qeydiyyat aç','Geri zəng siyahısı'],
+    'w3':['Diaqnostika protokolu','Test nəticələrini daxil et','Hesabat hazırla'],
+    'w4':['Müştəri görüşü','Satış hesabatı','Yeni potensial siyahı'],
+    'w5':['Həftəlik hesabat','Kontent planı','Reklam analizi'],
+    'w6':['Loqoped seans','Protokol doldur','Valideyn görüşü'],
+    'w7':['Reels hazırla','Story paylaş','Statistika analiz'],
+    'w8':['Qeydiyyat aparatı','Cavab ver','Cədvəl yenilə']
+  };
+  const c = cats[wid]||['Tapşırıq 1','Tapşırıq 2','Tapşırıq 3'];
+  allTasks = [
+    {id:'t1',name:c[0],cat:'Əsas İş',wid,pts:30,priority:'high',deadline:today(),done:false,date:today()},
+    {id:'t2',name:c[1],cat:'Hesabat',wid,pts:20,priority:'med',deadline:today(),done:true,date:today()},
+    {id:'t3',name:c[2],cat:'Əlavə',wid,pts:10,priority:'low',deadline:today(),done:false,date:today()},
+    {id:'t4',name:'Həftəlik görüşə qatıl',cat:'Görüş',wid,pts:10,priority:'med',deadline:addDays(1),done:false,date:today()},
+    {id:'t5',name:'Aylıq hesabat hazırla',cat:'Hesabat',wid,pts:20,priority:'high',deadline:addDays(3),done:false,date:addDays(-1)},
+    {id:'t6',name:'Sənədlər yenilə',cat:'Sənədləşmə',wid,pts:10,priority:'low',deadline:addDays(-1),done:false,date:addDays(-2)},
+    {id:'t7',name:'Treyninqə qatıl',cat:'Görüş',wid,pts:15,priority:'med',deadline:addDays(-3),done:true,date:addDays(-3)},
+    {id:'t8',name:'Müştəri məmnuniyyəti formu',cat:'Müştəri',wid,pts:10,priority:'low',deadline:addDays(-5),done:true,date:addDays(-5)},
+  ];
+}
+
+// ─── LOGIN ───────────────────────────────────────────────────────────────────
+function buildLoginUI() {
+  // Email/Password auth — UI artıq HTML-dədir, heç nə əlavə etmək lazım deyil
+  document.getElementById('login-email').focus();
+}
+
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-err');
+
+  if(!email || !pass){
+    errEl.textContent = 'Email və şifrəni daxil edin';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Yüklənir...';
+  errEl.style.display = 'none';
+
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const uid  = cred.user.uid;
+    const userEmail = cred.user.email;
+
+    // Firebase-dən işçilər siyahısını oxu, email-ə görə tap
+    const snap = await get(ref(db,'ppcdata/workers'));
+    const fbWorkers = snap.val();
+
+    if(fbWorkers && Array.isArray(fbWorkers)){
+      allWorkers = fbWorkers;
+    }
+
+    // Email-ə uyğun işçini tap
+    const w = allWorkers.find(x =>
+      x.email === userEmail ||
+      x.email === email ||
+      userEmail.split('@')[0].toLowerCase().includes(x.name.split(' ')[0].toLowerCase())
+    );
+
+    if(!w){
+      // Email-ə uyğun işçi tapılmadı — demo üçün birinci işçi ilə davam et
+      currentWorker = allWorkers[0];
+    } else {
+      currentWorker = w;
+    }
+
+    // Firebase UID-ni işçiyə bağla
+    currentWorker.uid = uid;
+    currentWorker.authEmail = userEmail;
+
+    seedTasks(currentWorker.id);
+    loadSavedTasks(currentWorker.id);
+    initApp();
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display   = 'block';
+
+  } catch(err) {
+    errEl.style.display = 'block';
+    if(err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'){
+      errEl.textContent = 'Email və ya şifrə yanlışdır';
+    } else if(err.code === 'auth/invalid-email'){
+      errEl.textContent = 'Email formatı yanlışdır';
+    } else if(err.code === 'auth/too-many-requests'){
+      errEl.textContent = 'Çox cəhd edildi. Bir az gözləyin';
+    } else {
+      errEl.textContent = 'Giriş xətası: ' + err.message;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Daxil ol';
+  }
+}
+
+window.doLogout = async function() {
+  try { await signOut(auth); } catch(e){}
+  currentWorker = null;
+  allTasks = [];
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display   = 'none';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pass').value  = '';
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-btn').textContent = 'Daxil ol';
+}
+
+function loadSavedTasks(wid) {
+  // Firebase real-time listener — tapşırıqlar dəyişəndə UI avtomatik yenilənir
+  onValue(ref(db,'ppcdata/tasks'), (snapshot)=>{
+    const fbTasks = snapshot.val();
+    if(fbTasks && Array.isArray(fbTasks)){
+      const myFbTasks = fbTasks.filter(t=>t.wid===wid);
+      // done statusunu Firebase-dən götür
+      allTasks.forEach(t=>{
+        const fb = myFbTasks.find(x=>x.id===t.id);
+        if(fb !== undefined) t.done = fb.done;
+      });
+      // Firebase-dəki amma local-da olmayan tapşırıqları əlavə et (admin sonradan verə bilər)
+      myFbTasks.forEach(ft=>{
+        if(!allTasks.find(t=>t.id===ft.id)) allTasks.push(ft);
+      });
+    } else {
+      saveTasks(wid); // Firebase boşdursa seed data yaz
+    }
+    updateSidebarPts();
+    document.getElementById('open-badge').textContent = allTasks.filter(t=>t.wid===wid&&!t.done).length;
+    const activePage = document.querySelector('.page.active')?.id?.replace('page-','');
+    if(activePage) renderPage(activePage);
+  }, (err)=>{
+    console.error('Firebase oxuma xətası:', err);
+    // Fallback: localStorage
+    try {
+      const saved = localStorage.getItem('ppc_tasks_'+wid);
+      if(saved){ const st=JSON.parse(saved); allTasks.forEach(t=>{const s=st.find(x=>x.id===t.id);if(s)t.done=s.done;}); }
+    } catch(e){}
+  });
+}
+
+function saveTasks(wid) {
+  try{ localStorage.setItem('ppc_tasks_'+wid, JSON.stringify(allTasks)); } catch(e){}
+  // Firebase-ə yaz — bütün tasks array-i yenilə (digər işçilərin tapşırıqlarını saxla)
+  get(ref(db,'ppcdata/tasks')).then(snap=>{
+    let allFbTasks = snap.val() || [];
+    if(!Array.isArray(allFbTasks)) allFbTasks = [];
+    const otherTasks = allFbTasks.filter(t=>t.wid!==wid);
+    const merged = [...otherTasks, ...allTasks.filter(t=>t.wid===wid)];
+    update(ref(db,'ppcdata'), {tasks: merged})
+      .catch(e=>console.error('Firebase yazma xətası:',e));
+  }).catch(e=>console.error(e));
+}
+
+// ─── APP INIT ────────────────────────────────────────────────────────────────
+function initApp() {
+  const w = currentWorker;
+  document.getElementById('sp-av').textContent = initials(w.name);
+  document.getElementById('sp-av').style.cssText = `background:${w.color}20;color:${w.color};width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px`;
+  document.getElementById('sp-name').textContent = w.name;
+  document.getElementById('sp-role').textContent = w.role;
+  updateSidebarPts();
+
+  const h = new Date().getHours();
+  const gr = h<12?'Sabahınız xeyir':'h<18'?'Günortanız xeyir':'Axşamınız xeyir';
+  document.getElementById('hdr-greeting').textContent = h<12?'Sabahınız xeyir ☀️':h<18?'Günortanız xeyir 🌤':'Axşamınız xeyir 🌙';
+  document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  gotoPage('overview', document.querySelector('.nav-item'));
+}
+
+function updateSidebarPts() {
+  document.getElementById('sp-pts').textContent = getPts(currentWorker.id);
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+window.gotoPage = function(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={overview:'Xülasə',tasks:'Tapşırıqlarım',history:'Xal Tarixçəsi',rank:'Sıralamam',profile:'Profilim'};
+  document.getElementById('hdr-title').textContent = titles[id]||id;
+  renderPage(id);
+}
+
+function renderPage(id) {
+  if(id==='overview') renderOverview();
+  else if(id==='tasks') renderTasks(taskFilter);
+  else if(id==='history') renderHistory();
+  else if(id==='rank') renderRank();
+  else if(id==='profile') renderProfile();
+}
+
+// ─── OVERVIEW ────────────────────────────────────────────────────────────────
+function renderOverview() {
+  const w = currentWorker;
+  const myT = allTasks.filter(t=>t.wid===w.id);
+  const todayT = myT.filter(t=>t.date===today());
+  const doneT = myT.filter(t=>t.done);
+  const pts = getPts(w.id);
+  const openT = myT.filter(t=>!t.done);
+  const overdueT = myT.filter(t=>!t.done&&t.deadline<today());
+
+  document.getElementById('open-badge').textContent = openT.length;
+
+  document.getElementById('ov-metrics').innerHTML = `
+    <div class="metric-card blue"><div class="m-label">Bu Ayın Xalı</div><div class="m-val">${pts}</div><div class="m-sub">${doneT.length} tapşırıq tamamlandı</div></div>
+    <div class="metric-card green"><div class="m-label">Bu Gün</div><div class="m-val">${todayT.filter(t=>t.done).length}/${todayT.length}</div><div class="m-sub">${pct(todayT.filter(t=>t.done).length,todayT.length)}% tamamlama</div></div>
+    <div class="metric-card ${overdueT.length>0?'amber':'green'}"><div class="m-label">Gecikmiş</div><div class="m-val">${overdueT.length}</div><div class="m-sub">${overdueT.length>0?'Diqqət tələb edir':'Hamısı vaxtında'}</div></div>`;
+
+  const todaySorted = [...todayT].sort((a,b)=>a.done-b.done);
+  document.getElementById('ov-tasks').innerHTML = todaySorted.length ?
+    todaySorted.map(t=>`<div class="task-row" onclick="quickToggle('${t.id}')">
+      <div class="task-check ${t.done?'done':''}">${t.done?'✓':''}</div>
+      <div class="prio-dot p-${t.priority}"></div>
+      <div class="task-name ${t.done?'done':''}">${t.name}</div>
+      <div class="task-pts">+${t.pts}</div>
+    </div>`).join('')
+    :'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Bu gün tapşırıq yoxdur ✅</div>';
+
+  // Weekly progress
+  const total = myT.length;
+  const done = doneT.length;
+  const ringPct = pct(done,total);
+  const r=54,circ=2*Math.PI*r;
+  document.getElementById('ov-ring').innerHTML = `
+    <div style="position:relative;width:140px;height:140px">
+      <svg class="ring" width="140" height="140" viewBox="0 0 140 140">
+        <circle class="ring-bg" cx="70" cy="70" r="${r}"/>
+        <circle class="ring-fg" cx="70" cy="70" r="${r}"
+          stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-ringPct/100)}"
+          style="stroke:${w.color}"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div style="font-size:22px;font-weight:800;color:var(--text);font-family:'DM Mono',monospace">${ringPct}%</div>
+        <div style="font-size:11px;color:var(--text3)">tamamlama</div>
+      </div>
+    </div>`;
+
+  const weekPts = [
+    {d:'B.e',p:30},{d:'Ç.a',p:45},{d:'Çər',p:20},{d:'C.a',p:35},{d:'Cümə',p:pts>0?pts-130:0}
+  ];
+  const maxW = Math.max(...weekPts.map(x=>x.p),1);
+  document.getElementById('ov-week').innerHTML = `<div style="display:flex;align-items:flex-end;gap:8px;height:60px">
+    ${weekPts.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="width:100%;background:${w.color};border-radius:4px 4px 0 0;height:${Math.max(pct(d.p,maxW)*0.56,4)}px;opacity:.7"></div>
+      <div style="font-size:10px;color:var(--text3)">${d.d}</div>
+    </div>`).join('')}
+  </div>`;
+
+  const recent = doneT.slice(-4).reverse();
+  document.getElementById('ov-activity').innerHTML = recent.length ?
+    recent.map(t=>`<div class="hist-row">
+      <div class="hist-ic" style="background:${w.color}15">✅</div>
+      <div class="hist-name">${t.name}</div>
+      <div class="hist-pts">+${t.pts}</div>
+    </div>`).join('')
+    :'<div style="color:var(--text3);font-size:13px;padding:10px 0">Hələ tamamlanmış tapşırıq yoxdur</div>';
+}
+
+window.quickToggle = function(id) {
+  const t = allTasks.find(x=>x.id===id);
+  if(!t) return;
+  t.done=!t.done;
+  saveTasks(currentWorker.id);
+  updateSidebarPts();
+  renderOverview();
+  toast(t.done?`+${t.pts} xal qazandınız! 🎉`:'Tapşırıq açıldı','success');
+}
+
+// ─── TASKS ───────────────────────────────────────────────────────────────────
+window.filterMyTasks = function(f,el) {
+  taskFilter=f;
+  document.querySelectorAll('#page-tasks .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderTasks(f);
+}
+
+function renderTasks(f) {
+  const w = currentWorker;
+  let tasks = allTasks.filter(t=>t.wid===w.id);
+  const td = today();
+  if(f==='open') tasks=tasks.filter(t=>!t.done);
+  else if(f==='done') tasks=tasks.filter(t=>t.done);
+  else if(f==='overdue') tasks=tasks.filter(t=>!t.done&&t.deadline<td);
+
+  document.getElementById('open-badge').textContent = allTasks.filter(t=>t.wid===w.id&&!t.done).length;
+
+  if(!tasks.length){
+    document.getElementById('task-list').innerHTML='<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Tapşırıq tapılmadı</div>';return;
+  }
+
+  document.getElementById('task-list').innerHTML = tasks.map(t=>{
+    const isOver=!t.done&&t.deadline<td;
+    const dlCls=t.done?'dl-ok':isOver?'dl-over':t.deadline===td?'dl-warn':'';
+    const dlTxt=t.done?'Tamamlandı':isOver?'Gecikdi':t.deadline===td?'Bu gün':'';
+    return `<div class="task-row">
+      <div class="task-check ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+      <div class="prio-dot p-${t.priority}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="task-name ${t.done?'done':''}">${t.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${t.cat} · Son tarix: ${t.deadline}</div>
+      </div>
+      ${dlTxt?`<span class="dl-badge ${dlCls}">${dlTxt}</span>`:''}
+      <div class="task-pts">+${t.pts}</div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleTask = function(id) {
+  const t=allTasks.find(x=>x.id===id); if(!t) return;
+  t.done=!t.done;
+  saveTasks(currentWorker.id);
+  updateSidebarPts();
+  renderTasks(taskFilter);
+  toast(t.done?`+${t.pts} xal qazandınız! 🎉`:'Tapşırıq açıldı','success');
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const w=currentWorker;
+  const done=allTasks.filter(t=>t.wid===w.id&&t.done);
+  const pts=getPts(w.id);
+  const cats=[...new Set(done.map(t=>t.cat))];
+
+  document.getElementById('hist-metrics').innerHTML=`
+    <div class="metric-card blue"><div class="m-label">Ümumi Xal</div><div class="m-val">${pts}</div><div class="m-sub">Bu ay</div></div>
+    <div class="metric-card green"><div class="m-label">Tamamlandı</div><div class="m-val">${done.length}</div><div class="m-sub">Tapşırıq</div></div>
+    <div class="metric-card amber"><div class="m-label">Orta / Tapşırıq</div><div class="m-val">${done.length?Math.round(pts/done.length):0}</div><div class="m-sub">Xal</div></div>`;
+
+  document.getElementById('hist-list').innerHTML = done.length ?
+    done.slice().reverse().map(t=>{
+      const catIc={'Əsas İş':'💼','Hesabat':'📊','Əlavə':'⚡','Görüş':'🤝','Sənədləşmə':'📁','Müştəri':'💬','default':'✅'};
+      const ic=catIc[t.cat]||catIc.default;
+      return `<div class="hist-row">
+        <div class="hist-ic" style="background:${w.color}15">${ic}</div>
+        <div style="flex:1;min-width:0">
+          <div class="hist-name">${t.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${t.cat}</div>
+        </div>
+        <div class="hist-date">${t.date}</div>
+        <div class="hist-pts">+${t.pts}</div>
+      </div>`;
+    }).join('')
+    :'<div style="color:var(--text3);font-size:13px;padding:16px 0;text-align:center">Hələ tamamlanmış tapşırıq yoxdur</div>';
+}
+
+// ─── RANK ────────────────────────────────────────────────────────────────────
+function renderRank() {
+  const w=currentWorker;
+  const myPts=getPts(w.id);
+  const mockRanks=[
+    {name:w.name,pts:myPts,role:w.role,color:w.color,isMe:true},
+    {name:'Rauf Hüseynov',pts:210,role:'Zəng Mərkəzi',color:'#22c77e',isMe:false},
+    {name:'Aynur Məmmədova',pts:175,role:'Diaqnostika',color:'#a855f7',isMe:false},
+    {name:'Leyla Əliyeva',pts:145,role:'Psixoloq',color:'#3b7cf4',isMe:false},
+    {name:'Sevinc Nəcəfova',pts:130,role:'Marketinq',color:'#06b6d4',isMe:false},
+  ].map(x=>x.isMe?x:{...x,pts:x.pts}).sort((a,b)=>b.pts-a.pts);
+
+  const myRank=mockRanks.findIndex(x=>x.isMe)+1;
+  const maxP=mockRanks[0].pts||1;
+
+  document.getElementById('rank-content').innerHTML=`
+    <div class="rank-box">
+      <div class="rank-num">${myRank}</div>
+      <div class="rank-of">/ ${mockRanks.length} işçi arasında</div>
+      <div style="margin-top:12px"><span class="badge ${myRank===1?'b-amber':myRank<=3?'b-green':'b-gray'}">${myRank===1?'🏆 Birinci':myRank===2?'🥈 İkinci':myRank===3?'🥉 Üçüncü':'Top '+myRank}</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bu Ayın Sıralaması</div>
+      ${mockRanks.map((r,i)=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);background:${r.isMe?r.color+'08':'transparent'};border-radius:${r.isMe?'8px':'0'};padding-left:${r.isMe?'10px':'0'}">
+          <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:${i===0?'#f0b42920':i===1?'#94a3b820':i===2?'#cd7c3020':'var(--surface2)'};color:${i===0?'var(--gold)':i===1?'#94a3b8':i===2?'#cd7c30':'var(--text3)'}">${i+1}</div>
+          <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${r.color}20;color:${r.color}">${initials(r.name)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:${r.isMe?700:500};color:${r.isMe?'var(--text)':'var(--text2)'}">${r.name}${r.isMe?' (siz)':''}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+              <div class="prog-bar" style="max-width:120px"><div class="prog-fill" style="width:${pct(r.pts,maxP)}%;background:${r.color}"></div></div>
+            </div>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:${r.color};font-family:'DM Mono',monospace">${r.pts}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ─── PROFILE ─────────────────────────────────────────────────────────────────
+function renderProfile() {
+  const w=currentWorker;
+  const myT=allTasks.filter(t=>t.wid===w.id);
+  const done=myT.filter(t=>t.done);
+  const pts=getPts(w.id);
+
+  document.getElementById('profile-hero-wrap').innerHTML=`
+    <div class="profile-hero">
+      <div class="ph-avatar" style="background:${w.color}20;color:${w.color}">${initials(w.name)}</div>
+      <div>
+        <div class="ph-name">${w.name}</div>
+        <div class="ph-role">${w.role}</div>
+        <div class="ph-meta">
+          <span class="ph-tag">🏢 ${w.branch}</span>
+          <span class="ph-tag">📂 ${w.dept}</span>
+          <span class="ph-tag" style="color:${w.color};border-color:${w.color}40">⭐ ${pts} xal</span>
+          <span class="ph-tag">✅ ${done.length} tapşırıq</span>
+        </div>
+      </div>
+    </div>`;
+
+  const kpiByRole={
+    'Psixoloq':['Seans sayı','Pasient davamlılığı','Hesabat vaxtı','Müştəri məmnuniyyəti'],
+    'Zəng Mərkəzi Operatoru':['Cavablandırılan zənglər','Qeydiyyata çevrilmə','Geri dönüş sürəti','Müştəri məmnuniyyəti'],
+    'Satış Meneceri':['Görüş sayı','Satışa keçid faizi','Yeni müştəri','Aylıq hədəf'],
+    'Marketinq Meneceri':['Post sayı','Baxış artımı','Müraciət sayı','Kontent planı'],
+    'default':['Tapşırıq tamamlama','Vaxtında teslim','Keyfiyyət','Davamlılıq']
+  };
+  const kpis=kpiByRole[w.role]||kpiByRole.default;
+  const kpiVals=[pct(done.length,myT.length),Math.min(pts/2,100),Math.min(pts/1.5,100),75];
+  document.getElementById('kpi-list').innerHTML=kpis.map((k,i)=>`
+    <div style="padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <div style="font-size:12px;color:var(--text2)">${k}</div>
+        <div style="font-size:13px;font-weight:700;color:${kpiVals[i]>70?'var(--green)':kpiVals[i]>40?'var(--amber)':'var(--red)'};font-family:'DM Mono',monospace">${Math.round(kpiVals[i])}%</div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${kpiVals[i]}%;background:${kpiVals[i]>70?'var(--green)':kpiVals[i]>40?'var(--amber)':'var(--red)'}"></div></div>
+    </div>`).join('');
+
+  const cats=[...new Set(myT.map(t=>t.cat))];
+  document.getElementById('cat-pts').innerHTML=cats.map(c=>{
+    const ct=myT.filter(t=>t.cat===c);
+    const cpts=ct.filter(t=>t.done).reduce((s,t)=>s+t.pts,0);
+    return `<div style="padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <div style="font-size:12px;color:var(--text2)">${c}</div>
+        <div style="font-size:13px;font-weight:700;color:${w.color};font-family:'DM Mono',monospace">${cpts} xal</div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct(ct.filter(t=>t.done).length,ct.length)}%;background:${w.color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+window.toast = function(msg,type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast ${type}`;
+  void t.offsetWidth; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+// Səhifə yüklənəndə: əgər istifadəçi artıq giriş edibsə — birbaşa app-ə keçir
+onAuthStateChanged(auth, async (user) => {
+  if(user){
+    // İstifadəçi sessiyası var — işçiləri Firebase-dən oxu
+    try {
+      const snap = await get(ref(db,'ppcdata/workers'));
+      const fbWorkers = snap.val();
+      if(fbWorkers && Array.isArray(fbWorkers) && fbWorkers.length>0){
+        allWorkers = fbWorkers;
+      }
+    } catch(e){}
+
+    // Email-ə uyğun işçini tap
+    const w = allWorkers.find(x =>
+      x.email === user.email ||
+      user.email.split('@')[0].toLowerCase().includes((x.name||'').split(' ')[0].toLowerCase())
+    ) || allWorkers[0];
+
+    if(w){
+      currentWorker = {...w, uid: user.uid, authEmail: user.email};
+      seedTasks(currentWorker.id);
+      loadSavedTasks(currentWorker.id);
+      initApp();
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display   = 'block';
+    } else {
+      buildLoginUI();
+    }
+  } else {
+    // Giriş edilməyib — login ekranını göstər
+    buildLoginUI();
+  }
+});
+</script>
+</body>
+</html>
