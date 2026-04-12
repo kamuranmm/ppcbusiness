@@ -2,7 +2,7 @@
 <html lang="az">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>PPC Rəqəmsal İdarəetmə Sistemi</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -202,10 +202,127 @@ tbody tr:hover td{background:var(--surface2)}
 .span2{grid-column:span 2}
 .mb16{margin-bottom:16px}
 
-@media(max-width:1100px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
+/* ── HAMBURGER ── */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;border:none;background:none}
+.hamburger span{width:22px;height:2px;background:var(--text2);border-radius:2px;transition:.3s;display:block}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49;backdrop-filter:blur(2px)}
+.sidebar-overlay.open{display:block}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .g4{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:768px){
+  /* Sidebar mobil */
+  .sidebar{
+    position:fixed;left:-240px;top:0;bottom:0;z-index:50;
+    transition:left .25s ease;width:230px
+  }
+  .sidebar.open{left:0}
+  .hamburger{display:flex}
+  .main{margin-left:0}
+
+  /* Topbar */
+  .topbar{padding:0 14px;height:52px}
+  .tb-title{font-size:14px}
+  .tb-date{font-size:10px}
+
+  /* Content */
+  .content{padding:14px}
+
+  /* Grids */
+  .g4{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+
+  /* Metric cards */
+  .mc-val{font-size:22px}
+
+  /* Tables scroll */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* Cards */
+  .card{padding:12px 14px}
+
+  /* Modal */
+  .modal{max-width:100%;width:calc(100% - 24px);margin:12px;max-height:85vh}
+  .form-row{grid-template-columns:1fr}
+
+  /* Workers grid */
+  #workers-grid{grid-template-columns:1fr !important}
+
+  /* Vak list */
+  #vak-list{grid-template-columns:1fr !important}
+}
+
+@media(max-width:480px){
+  .g4{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .mc-val{font-size:20px}
+  .content{padding:10px}
+  .topbar{padding:0 12px}
+  .tab-bar{overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
+  .tab-btn{white-space:nowrap;flex-shrink:0}
+}
 </style>
 </head>
 <body>
+<!-- ══ ADMIN LOGIN ══ -->
+<div id="admin-login" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--navy-dark);position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 25% 50%,rgba(30,95,173,.35),transparent 55%),radial-gradient(ellipse at 75% 30%,rgba(10,124,110,.2),transparent 50%)"></div>
+  <div style="position:relative;z-index:1;width:100%;max-width:420px;padding:0 20px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:60px;height:60px;background:var(--blue);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;margin:0 auto 12px">PPC</div>
+      <div style="font-size:20px;font-weight:700;color:#fff">Rəqəmsal İdarəetmə</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:4px;letter-spacing:.08em;text-transform:uppercase">Admin Paneli · Pozitiv Psixologiya Mərkəzi</div>
+    </div>
+    <div style="background:rgba(255,255,255,.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:32px 28px">
+      <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:4px">Xoş gəldiniz</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:22px">Admin hesabınızla daxil olun</div>
+      <div id="al-err" style="display:none;background:rgba(217,79,61,.15);border:1px solid rgba(217,79,61,.4);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#F87171;margin-bottom:14px"></div>
+      <div style="margin-bottom:13px">
+        <div style="font-size:11.5px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:5px">Email</div>
+        <input id="al-email" type="email" placeholder="admin@ppc.az" onkeydown="if(event.key==='Enter')document.getElementById('al-pass').focus()"
+          style="width:100%;padding:11px 14px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div style="margin-bottom:18px">
+        <div style="font-size:11.5px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:5px">Şifrə</div>
+        <input id="al-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"
+          style="width:100%;padding:11px 14px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <button id="al-btn" onclick="doAdminLogin()"
+        style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+        Daxil ol
+      </button>
+      <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,.08);padding-top:16px">
+        <div style="font-size:10px;color:rgba(255,255,255,.2);text-align:center;margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">Demo hesablar</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+          <button onclick="document.getElementById('al-email').value='admin@ppc.az';document.getElementById('al-pass').value='Admin2024'"
+            style="padding:7px 8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;font-family:inherit;text-align:left">
+            <div style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.7)">Baş Admin</div>
+            <div style="font-size:9.5px;color:rgba(255,255,255,.3)">Super Admin</div>
+          </button>
+          <button onclick="document.getElementById('al-email').value='rehber@ppc.az';document.getElementById('al-pass').value='Rehber2024'"
+            style="padding:7px 8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;font-family:inherit;text-align:left">
+            <div style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.7)">Rəhbərlik</div>
+            <div style="font-size:9.5px;color:rgba(255,255,255,.3)">Rəhbər</div>
+          </button>
+          <button onclick="document.getElementById('al-email').value='kamran@ppc.az';document.getElementById('al-pass').value='Kamran2024'"
+            style="padding:7px 8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;font-family:inherit;text-align:left">
+            <div style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.7)">Kamran</div>
+            <div style="font-size:9.5px;color:rgba(255,255,255,.3)">Sistem Admini</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP WRAP ══ -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div id="app-wrap" style="display:none" class="app-container">
 <div class="app">
 
 <!-- ══ SIDEBAR ══ -->
@@ -292,15 +409,21 @@ tbody tr:hover td{background:var(--surface2)}
   <div class="sidebar-footer">
     <div class="sf-user">
       <div class="sf-av" id="sf-av">RH</div>
-      <div><div class="sf-name">Rəhbərlik</div><div class="sf-role">Admin · Baş Ofis</div></div>
+      <div><div class="sf-name">Rəhbərlik</div><div class="sf-role" id="sf-role-el">Admin · Baş Ofis</div></div>
     </div>
+    <button onclick="doAdminLogout()" style="width:100%;padding:7px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.35);font-size:11.5px;cursor:pointer;font-family:inherit;transition:.15s;margin-top:8px" onmouseover="this.style.borderColor='rgba(217,79,61,.5)';this.style.color='#F87171'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.35)'">
+      ← Çıxış
+    </button>
   </div>
 </aside>
 
 <!-- ══ MAIN ══ -->
 <main class="main">
   <div class="topbar">
-    <div class="tb-left">
+    <div class="tb-left" style="display:flex;align-items:center;gap:10px">
+      <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menyu">
+        <span></span><span></span><span></span>
+      </button>
       <div>
         <div class="tb-title" id="tb-title">İdarə Paneli</div>
         <div class="tb-date" id="tb-date"></div>
@@ -616,7 +739,8 @@ tbody tr:hover td{background:var(--surface2)}
 
   </div>
 </main>
-</div>
+</div><!-- /app -->
+</div><!-- /app-wrap -->
 
 <!-- ══ MODAL: TASK ══ -->
 <div class="modal-overlay" id="modal-task">
@@ -916,6 +1040,7 @@ tbody tr:hover td{background:var(--surface2)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD-m3D563Lf4sx3bpe0MxdbiZqHRP_0ATw",
@@ -926,8 +1051,8 @@ const firebaseConfig = {
   appId: "1:286854322385:web:dba379035c15cb38e2cdf0"
 };
 
-let db = null;
-try { const app = initializeApp(firebaseConfig); db = getDatabase(app); } catch(e) {}
+let db = null; let auth = null;
+try { const app = initializeApp(firebaseConfig); db = getDatabase(app); auth = getAuth(app); } catch(e) {}
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let S = {
@@ -2382,6 +2507,24 @@ window.updateHdTarget=function(){
   else if(t==='dept') sel.innerHTML=[...new Set(S.workers.map(w=>w.dept))].map(d=>`<option>${d}</option>`).join('');
   else sel.innerHTML=[...new Set(S.workers.map(w=>w.branch))].map(b=>`<option>${b}</option>`).join('');
 };
+// ── MOBİL SİDEBAR ────────────────────────────────────────────────────────────
+window.toggleSidebar = function() {
+  const sb=document.querySelector('.sidebar');
+  const ov=document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('open');
+};
+window.closeSidebar = function() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+};
+// Nav itemə klikdə mobilde sidebar bağla
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    if(window.innerWidth<=768) closeSidebar();
+  });
+});
+
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast = function(msg, type='') {
   const t=document.getElementById('toast');
@@ -2390,10 +2533,87 @@ window.toast = function(msg, type='') {
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-seedData();
-loadState();
+// ── ADMIN GİRİŞ SİSTEMİ ─────────────────────────────────────────────────────
+const ADMIN_USERS = [
+  {email:'admin@ppc.az',    pass:'Admin2024',  name:'Baş Admin',      role:'Super Admin'},
+  {email:'rehber@ppc.az',   pass:'Rehber2024', name:'Rəhbərlik',      role:'Rəhbər'},
+  {email:'kamran@ppc.az',   pass:'Kamran2024', name:'Kamran',         role:'Sistem Admini'},
+];
+
+function showLogin() {
+  document.getElementById('admin-login').style.display='flex';
+  document.getElementById('app-wrap').style.display='none';
+}
+function showApp(user) {
+  document.getElementById('admin-login').style.display='none';
+  document.getElementById('app-wrap').style.display='flex';
+  document.getElementById('sf-av').textContent = user.name.slice(0,2).toUpperCase();
+  document.getElementById('sf-name').textContent = user.name;
+  document.getElementById('sf-role-el').textContent = user.role;
+  document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  seedData(); loadState();
+}
+
+window.doAdminLogin = async function() {
+  const email = document.getElementById('al-email').value.trim();
+  const pass  = document.getElementById('al-pass').value;
+  const btn   = document.getElementById('al-btn');
+  const err   = document.getElementById('al-err');
+  if(!email||!pass){err.textContent='Email və şifrəni daxil edin';err.style.display='block';return;}
+  btn.disabled=true; btn.textContent='Yüklənir...'; err.style.display='none';
+
+  // Firebase Auth cəhd et
+  let fbOk = false;
+  if(auth) {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      fbOk = true;
+    } catch(e) {}
+  }
+
+  // Local admin yoxla (demo/fallback)
+  const localUser = ADMIN_USERS.find(u=>u.email===email&&u.pass===pass);
+
+  if(fbOk || localUser) {
+    const user = localUser || {name: email.split('@')[0], role:'Admin'};
+    try{ localStorage.setItem('ppc_admin_session', JSON.stringify({email, name:user.name, role:user.role, ts:Date.now()})); }catch(e){}
+    showApp(user);
+  } else {
+    err.textContent = 'Email və ya şifrə yanlışdır';
+    err.style.display='block';
+    btn.disabled=false; btn.textContent='Daxil ol';
+  }
+};
+
+window.doAdminLogout = async function() {
+  try{ if(auth) await signOut(auth); }catch(e){}
+  try{ localStorage.removeItem('ppc_admin_session'); }catch(e){}
+  showLogin();
+  document.getElementById('al-email').value='';
+  document.getElementById('al-pass').value='';
+  document.getElementById('al-btn').disabled=false;
+  document.getElementById('al-btn').textContent='Daxil ol';
+};
+
+// Session yoxla
+(function checkSession(){
+  try{
+    const s=JSON.parse(localStorage.getItem('ppc_admin_session')||'null');
+    if(s && Date.now()-s.ts < 86400000*7) { // 7 gün
+      showApp(s); return;
+    }
+  }catch(e){}
+
+  // Firebase Auth session
+  if(auth) {
+    onAuthStateChanged(auth, user=>{
+      if(user){
+        const localUser=ADMIN_USERS.find(u=>u.email===user.email)||{name:user.email.split('@')[0],role:'Admin'};
+        showApp(localUser);
+      } else { showLogin(); }
+    });
+  } else { showLogin(); }
+})();
 </script>
 </body>
 </html>
