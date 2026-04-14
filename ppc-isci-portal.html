@@ -791,7 +791,7 @@ async function loadAndLogin(email) {
 
 function enterApp() {
   // Session saxla
-  try{ localStorage.setItem('ppc_isci_session', JSON.stringify({workerId:ME.id, ts:Date.now()})); }catch(e){}
+  try{ localStorage.setItem('ppc_isci_session', JSON.stringify({workerId:ME.id, username:ME.username||ME.email, ts:Date.now()})); }catch(e){}
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -819,7 +819,7 @@ window.doLogout = async function() {
 (function checkSession(){
   try{
     const s=JSON.parse(localStorage.getItem('ppc_isci_session')||'null');
-    if(s && Date.now()-s.ts < 86400000*7 && s.workerId){
+    if(s && s.workerId){ // Çıxış edilməyincə sessiya davam edir
       get(ref(db,'ppcdata')).then(snap=>{
         const d=snap.val()||{};
         if(d.workers?.length) S.workers=d.workers;
