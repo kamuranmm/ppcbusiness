@@ -40,13 +40,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .btn-login{width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;margin-top:4px;font-family:inherit}
 .btn-login:hover{background:var(--blue2)}
 .btn-login:disabled{opacity:.4;cursor:not-allowed}
-.quick-login{margin-top:20px}
-.ql-title{font-size:10px;color:rgba(255,255,255,.25);text-align:center;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
-.ql-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.ql-btn{padding:8px 10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;transition:.15s;text-align:left;font-family:inherit}
-.ql-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18)}
-.ql-name{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.8)}
-.ql-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
+
 
 /* ── APP ── */
 #app-screen{display:none}
@@ -163,29 +157,105 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 @media(max-width:1000px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B3A6B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PPC Sistem">
+<link rel="apple-touch-icon" href="ppc-icon-192.png">
 </head>
 <body>
 
 <!-- ══ LOGIN ══ -->
 <div id="login-screen">
   <div class="login-wrap">
-    <div class="login-box">
+    <!-- TAB SWITCH -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;background:rgba(255,255,255,.06);border-radius:12px;padding:4px">
+      <button id="tab-login" onclick="switchTab('login')"
+        style="flex:1;padding:9px;border:none;border-radius:9px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;background:rgba(30,95,173,.8);color:#fff;transition:.2s">
+        Daxil ol
+      </button>
+      <button id="tab-reg" onclick="switchTab('reg')"
+        style="flex:1;padding:9px;border:none;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;background:transparent;color:rgba(255,255,255,.5);transition:.2s">
+        Qeydiyyat
+      </button>
+    </div>
+
+    <!-- ── GİRİŞ PANELİ ── -->
+    <div id="panel-login" class="login-box">
       <div class="login-logo">
         <div class="login-logo-icon">PPC</div>
         <div class="login-logo-name">Pozitiv Psixologiya Mərkəzi</div>
         <div class="login-logo-sub">İşçi Portalı</div>
       </div>
       <div class="login-title">Xoş gəldiniz</div>
-      <div class="login-desc">Email və şifrənizlə daxil olun</div>
-      <div class="login-err" id="login-err">Email və ya şifrə yanlışdır</div>
-      <label class="lf-label">Email</label>
-      <input class="lf-input" id="li-email" type="email" placeholder="leyla@ppc.az" onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()">
+      <div class="login-desc">İstifadəçi adı və şifrənizlə daxil olun</div>
+      <div class="login-err" id="login-err"></div>
+      <label class="lf-label">İstifadəçi adı</label>
+      <input class="lf-input" id="li-username" type="text" placeholder="leyla_aliyeva"
+        onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()">
       <label class="lf-label">Şifrə</label>
-      <input class="lf-input" id="li-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <input class="lf-input" id="li-pass" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')doLogin()">
       <button class="btn-login" id="li-btn" onclick="doLogin()">Daxil ol</button>
-      <div class="quick-login">
-        <div class="ql-title">Sürətli giriş (demo)</div>
-        <div class="ql-grid" id="ql-grid"></div>
+
+    </div>
+
+    <!-- ── QEYDİYYAT PANELİ ── -->
+    <div id="panel-reg" class="login-box" style="display:none">
+      <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:4px">Yeni Qeydiyyat</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:18px">Formanı doldurun. Admin təsdiqindən sonra daxil ola bilərsiniz.</div>
+      <div id="reg-err" style="display:none;background:rgba(217,79,61,.15);border:1px solid rgba(217,79,61,.4);border-radius:8px;padding:10px;font-size:12px;color:#F87171;margin-bottom:12px"></div>
+      <div id="reg-ok" style="display:none;background:rgba(46,139,87,.15);border:1px solid rgba(46,139,87,.4);border-radius:8px;padding:12px;font-size:12.5px;color:#6EE7B7;margin-bottom:12px;text-align:center"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="lf-label">Ad *</label>
+          <input class="lf-input" id="rg-ad" placeholder="Leyla">
+        </div>
+        <div>
+          <label class="lf-label">Soyad *</label>
+          <input class="lf-input" id="rg-soyad" placeholder="Əliyeva">
+        </div>
+      </div>
+      <label class="lf-label">Ata adı</label>
+      <input class="lf-input" id="rg-ata" placeholder="Kamran">
+      <label class="lf-label">Vəzifə *</label>
+      <select class="lf-select" id="rg-vezife">
+        <option value="">— Seçin —</option>
+        <option>Psixoloq</option><option>Baş Psixoloq</option>
+        <option>Zəng Mərkəzi Operatoru</option><option>Satış Meneceri</option>
+        <option>Marketinq Meneceri</option><option>Sosial Media Meneceri</option>
+        <option>Loqoped</option><option>İdman Müəllimi</option>
+        <option>Resepsion</option><option>HR Mütəxəssisi</option>
+        <option>Layihə Meneceri</option><option>Digər</option>
+      </select>
+      <label class="lf-label">Filial *</label>
+      <select class="lf-select" id="rg-filial">
+        <option value="">— Seçin —</option>
+        <option>Azadlıq (Baş Ofis)</option><option>Nərimanov</option>
+        <option>Xırdalan</option><option>Sumqayıt</option>
+        <option>Gəncə</option><option>Quba</option><option>Lənkəran</option>
+      </select>
+      <label class="lf-label">Telefon</label>
+      <input class="lf-input" id="rg-tel" type="tel" placeholder="+994 50 123 45 67">
+      <label class="lf-label">İstifadəçi adı * <span style="font-size:10px;opacity:.5">(giriş üçün)</span></label>
+      <input class="lf-input" id="rg-username" placeholder="leyla_aliyeva" oninput="this.value=this.value.replace(/[^a-zA-Z0-9_]/g,'').toLowerCase()">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="lf-label">Şifrə *</label>
+          <input class="lf-input" id="rg-pass" type="password" placeholder="min 6 simvol">
+        </div>
+        <div>
+          <label class="lf-label">Şifrə təkrar *</label>
+          <input class="lf-input" id="rg-pass2" type="password" placeholder="••••••••">
+        </div>
+      </div>
+      <button class="btn-login" id="rg-btn" onclick="doRegister()" style="margin-top:6px">
+        Müraciət Göndər
+      </button>
+      <div style="font-size:10.5px;color:rgba(255,255,255,.25);text-align:center;margin-top:12px">
+        Müraciətiniz admin tərəfindən nəzərdən keçiriləcək
       </div>
     </div>
   </div>
@@ -415,6 +485,192 @@ function sortedW(){ return [...S.workers].sort((a,b)=>getPts(b.id)-getPts(a.id))
 function pct(a,b){ return b?Math.round(a/b*100):0; }
 function myRank(){ return sortedW().findIndex(w=>w.id===ME?.id)+1; }
 
+// ── QEYDİYYAT ────────────────────────────────────────────────────────────────
+window.switchTab = function(tab) {
+  const isLogin = tab==='login';
+  document.getElementById('panel-login').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('panel-reg').style.display   = isLogin ? 'none'  : 'block';
+  document.getElementById('tab-login').style.background = isLogin ? 'rgba(30,95,173,.8)' : 'transparent';
+  document.getElementById('tab-login').style.color      = isLogin ? '#fff' : 'rgba(255,255,255,.5)';
+  document.getElementById('tab-login').style.fontWeight = isLogin ? '700' : '600';
+  document.getElementById('tab-reg').style.background   = isLogin ? 'transparent' : 'rgba(30,95,173,.8)';
+  document.getElementById('tab-reg').style.color         = isLogin ? 'rgba(255,255,255,.5)' : '#fff';
+  document.getElementById('tab-reg').style.fontWeight    = isLogin ? '600' : '700';
+};
+
+window.doRegister = async function() {
+  const ad       = document.getElementById('rg-ad').value.trim();
+  const soyad    = document.getElementById('rg-soyad').value.trim();
+  const ata      = document.getElementById('rg-ata').value.trim();
+  const vezife   = document.getElementById('rg-vezife').value;
+  const filial   = document.getElementById('rg-filial').value;
+  const tel      = document.getElementById('rg-tel').value.trim();
+  const username = document.getElementById('rg-username').value.trim().toLowerCase();
+  const pass     = document.getElementById('rg-pass').value;
+  const pass2    = document.getElementById('rg-pass2').value;
+  const errEl    = document.getElementById('reg-err');
+  const okEl     = document.getElementById('reg-ok');
+  const btn      = document.getElementById('rg-btn');
+
+  errEl.style.display='none'; okEl.style.display='none';
+
+  // Validasiya
+  if(!ad||!soyad||!vezife||!filial||!username||!pass){
+    errEl.textContent='Mütləq sahələri (*) doldurun'; errEl.style.display='block'; return;
+  }
+  if(username.length<3){
+    errEl.textContent='İstifadəçi adı ən az 3 simvol olmalıdır'; errEl.style.display='block'; return;
+  }
+  if(pass.length<6){
+    errEl.textContent='Şifrə ən az 6 simvol olmalıdır'; errEl.style.display='block'; return;
+  }
+  if(pass!==pass2){
+    errEl.textContent='Şifrələr uyğun gəlmir'; errEl.style.display='block'; return;
+  }
+
+  btn.disabled=true; btn.textContent='Göndərilir...';
+
+  try {
+    // Username unikallığını yoxla
+    const snap = await get(ref(db,'isci_muraciatleri'));
+    const existing = snap.val() || {};
+    const usernameExists = Object.values(existing).some(m=>
+      (m.username||'').toLowerCase()===username
+    );
+    if(usernameExists){
+      errEl.textContent='Bu istifadəçi adı artıq mövcuddur. Başqa ad seçin.';
+      errEl.style.display='block';
+      btn.disabled=false; btn.textContent='Müraciət Göndər';
+      return;
+    }
+
+    // Firebase-ə qeydiyyat müraciəti yaz
+    const muraciatId = 'mur_'+Date.now();
+    const muraciat = {
+      id: muraciatId,
+      ad, soyad, ata, vezife, filial, tel,
+      username, pass,
+      fullName: ad+' '+soyad,
+      status: 'pending',
+      date: new Date().toISOString().slice(0,10),
+      ts: Date.now()
+    };
+    await set(ref(db,'isci_muraciatleri/'+muraciatId), muraciat);
+
+    // UI yenilə
+    okEl.innerHTML = '✓ Müraciətiniz göndərildi!<br><span style="font-size:11px;opacity:.7">Admin tərəfindən nəzərdən keçiriləcək. Təsdiqləndikdən sonra @'+username+' ilə daxil ola bilərsiniz.</span>';
+    okEl.style.display='block';
+    // Formu təmizlə
+    ['rg-ad','rg-soyad','rg-ata','rg-tel','rg-username','rg-pass','rg-pass2'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+    document.getElementById('rg-vezife').value='';
+    document.getElementById('rg-filial').value='';
+
+  } catch(e) {
+    errEl.textContent='Xəta baş verdi: '+e.message;
+    errEl.style.display='block';
+  }
+  btn.disabled=false; btn.textContent='Müraciət Göndər';
+};
+
+
+// ── İŞÇİ PWA + BİLDİRİŞ ──────────────────────────────────────────────────────
+async function initWorkerPWA(workerId) {
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    } catch(e) {}
+  }
+
+  // Bildiriş icazəsi
+  if ('Notification' in window && Notification.permission === 'default') {
+    setTimeout(requestNotifPermission, 2000);
+  } else if (Notification.permission === 'granted') {
+    await registerFCMToken();
+  }
+
+  // Real-time bildiriş listener
+  listenNotifications(workerId);
+
+  // iOS banner
+  if (isIOS() && !isInStandaloneMode()) showInstallBanner();
+}
+
+function addWorkerTopbarActions() {
+  const tbRight = document.getElementById('tb-right') || document.querySelector('.tb-right');
+  if (!tbRight) return;
+  tbRight.innerHTML = `
+    <button id="install-app-btn" onclick="installApp()" title="Tətbiqi yüklə"
+      style="display:none;align-items:center;gap:6px;padding:6px 11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit">
+      ⬇ Telefona yüklə
+    </button>
+    <button id="notif-btn" onclick="requestNotifPermission()" title="Bildirişlər"
+      style="position:relative;width:34px;height:34px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px">
+      🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center;"></span>
+    </button>
+  `;
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  const btn = document.getElementById('install-app-btn');
+  if(btn) btn.style.display='flex';
+});
+
+let deferredPrompt = null;
+window.installApp = async function() {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  const btn = document.getElementById('install-app-btn');
+  if(btn) btn.style.display='none';
+};
+
+function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent); }
+function isInStandaloneMode() { return window.matchMedia('(display-mode:standalone)').matches||navigator.standalone; }
+
+function showInstallBanner() {
+  if(document.getElementById('install-banner')) return;
+  const b=document.createElement('div');
+  b.id='install-banner';
+  b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1B3A6B;color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 -2px 16px rgba(0,0,0,.3)';
+  b.innerHTML=`<img src="ppc-icon-192.png" style="width:38px;height:38px;border-radius:9px;flex-shrink:0"><div style="flex:1"><div style="font-size:12.5px;font-weight:700">Ana ekrana əlavə et</div><div style="font-size:10.5px;opacity:.65;margin-top:1px">Paylaş düyməsi → Ana ekrana əlavə et</div></div><button onclick="this.closest('#install-banner').remove()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 10px;border-radius:7px;cursor:pointer;font-size:11px;font-family:inherit">✕</button>`;
+  document.body.appendChild(b);
+}
+
+async function requestNotifPermission() {
+  const p = await Notification.requestPermission();
+  if(p==='granted'){ await registerFCMToken(); toast('Bildirişlər aktiv edildi 🔔','success'); }
+}
+
+async function registerFCMToken() {
+  try {
+    const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
+    const msg = getMessaging();
+    const token = await getToken(msg, {vapidKey:'BDUwz3e8ZBePatW2Kr6PdXQZUCpCdnO3kP4ivAT3jGwNjiJP245tdBykkRUbQH6_2NfoQs2ZTDw2cCzF7Fs_95I'});
+    if(token && ME) await set(ref(db,'fcm_tokens/'+ME.id), {token, platform:isIOS()?'ios':'android', updatedAt:Date.now()});
+    onMessage(msg, p=>{ toast((p.notification?.title||'PPC')+': '+(p.notification?.body||''), 'success'); });
+  } catch(e){}
+}
+
+function listenNotifications(wid) {
+  if(!wid||!db) return;
+  onValue(ref(db,'notifications/'+wid), snap=>{
+    const data=snap.val()||{};
+    const unread=Object.values(data).filter(n=>!n.read);
+    const badge=document.getElementById('notif-badge');
+    if(badge){badge.textContent=unread.length||'';badge.style.display=unread.length?'flex':'none';}
+    unread.sort((a,b)=>b.ts-a.ts).slice(0,3).forEach(n=>{
+      if(document.hidden && Notification.permission==='granted'){
+        new Notification(n.title,{body:n.body,icon:'ppc-icon-192.png',badge:'ppc-badge-72.png',vibrate:[200,100,200]});
+      }
+    });
+  });
+}
+
 // ── FIREBASE LISTENER ─────────────────────────────────────────────────────────
 function startListener() {
   onValue(ref(db,'ppcdata'), snap => {
@@ -435,43 +691,70 @@ function saveTaskToFirebase() {
 }
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
-function buildQuickLogin() {
-  const grid = document.getElementById('ql-grid');
-  DEMO_WORKERS.slice(0,6).forEach(w=>{
-    const btn = document.createElement('button');
-    btn.className='ql-btn';
-    btn.innerHTML=`<div class="ql-name">${w.name.split(' ')[0]} ${w.name.split(' ')[1]?.[0]||''}.</div><div class="ql-role">${w.role.slice(0,20)}</div>`;
-    btn.onclick=()=>{
-      document.getElementById('li-email').value = w.email;
-      document.getElementById('li-pass').value  = w.id.slice(-4)+'2024';
-      doLogin();
-    };
-    grid.appendChild(btn);
-  });
-}
+
 
 window.doLogin = async function() {
-  const email = document.getElementById('li-email').value.trim();
-  const pass  = document.getElementById('li-pass').value;
-  const btn   = document.getElementById('li-btn');
-  const errEl = document.getElementById('login-err');
-  if(!email||!pass){errEl.textContent='Email və şifrəni daxil edin';errEl.style.display='block';return;}
+  const username = document.getElementById('li-username').value.trim().toLowerCase();
+  const pass     = document.getElementById('li-pass').value;
+  const btn      = document.getElementById('li-btn');
+  const errEl    = document.getElementById('login-err');
+  if(!username||!pass){errEl.textContent='İstifadəçi adı və şifrəni daxil edin';errEl.style.display='block';return;}
   btn.disabled=true; btn.textContent='Yüklənir...'; errEl.style.display='none';
 
   try {
-    // Firebase Auth cəhd et
+    // DB-dən bütün məlumatları oxu
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, pass);
-      await loadAndLogin(cred.user.email);
-    } catch(authErr) {
-      // Demo mode: email-ə görə işçi tap
-      const w = DEMO_WORKERS.find(x=>x.email===email) || S.workers.find(x=>x.email===email);
-      if(!w) throw new Error('not_found');
-      await loadAndLogin(email);
+      const snap = await get(ref(db,'ppcdata'));
+      const d = snap.val();
+      if(d?.workers?.length)  S.workers   = d.workers;
+      if(d?.tasks?.length)    S.tasks     = d.tasks;
+      if(d?.hedefler?.length) S.hedefler  = d.hedefler;
+      if(d?.rehberler?.length)S.rehberler = d.rehberler;
+    } catch(e){}
+    if(!S.workers.length) S.workers = DEMO_WORKERS;
+
+    // Firebase-dəki qeydiyyatdan keçmiş işçiləri yoxla
+    const dbSnap = await get(ref(db,'isci_muraciatleri'));
+    const muraciatler = dbSnap.val() || {};
+    const approved = Object.values(muraciatler).find(m=>
+      m.status==='approved' &&
+      (m.username||'').toLowerCase()===username &&
+      m.pass===pass
+    );
+
+    // Mövcud işçilərdə username yoxla (demo/seed)
+    const demoWorker = [...S.workers, ...DEMO_WORKERS].find(w=>
+      (w.username||w.email?.split('@')[0]||w.id.slice(-4)).toLowerCase()===username
+    );
+
+    if(approved) {
+      // Təsdiqlənmiş qeydiyyat
+      const w = S.workers.find(x=>x.id===approved.workerId) || {
+        id: approved.workerId||'w'+Date.now(),
+        name: approved.ad+' '+approved.soyad,
+        role: approved.vezife,
+        dept: approved.vezife,
+        branch: approved.filial,
+        color: '#1E5FAD',
+        username: approved.username,
+        email: approved.username+'@ppc.az'
+      };
+      const demoPass = (w.id?.slice(-4)||'0001')+'2024';
+      if(pass !== approved.pass) throw new Error('wrong_pass');
+      ME = w; startListener(); enterApp();
+    } else if(demoWorker) {
+      // Demo işçi — şifrə yoxla
+      const expectedPass = (demoWorker.id?.slice(-4)||'0001')+'2024';
+      if(pass !== expectedPass && pass !== 'demo') throw new Error('wrong_pass');
+      ME = demoWorker; startListener(); enterApp();
+    } else {
+      throw new Error('not_found');
     }
   } catch(err) {
     errEl.style.display='block';
-    errEl.textContent = err.message==='not_found'?'Bu email ilə işçi tapılmadı':'Email və ya şifrə yanlışdır';
+    if(err.message==='wrong_pass')       errEl.textContent='Şifrə yanlışdır';
+    else if(err.message==='not_found')   errEl.textContent='İstifadəçi adı tapılmadı və ya hələ təsdiqlənməyib';
+    else                                 errEl.textContent='Giriş xətası baş verdi';
     btn.disabled=false; btn.textContent='Daxil ol';
   }
 };
@@ -507,6 +790,8 @@ async function loadAndLogin(email) {
 }
 
 function enterApp() {
+  // Session saxla
+  try{ localStorage.setItem('ppc_isci_session', JSON.stringify({workerId:ME.id, ts:Date.now()})); }catch(e){}
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -514,6 +799,8 @@ function enterApp() {
   document.getElementById('tb-greeting').textContent = h<12?'☀️ Sabahınız xeyir':h<18?'🌤 Günortanız xeyir':'🌙 Axşamınız xeyir';
   updateSidebar();
   goPage('overview', document.querySelector('.nav-item'));
+  // PWA + bildiriş başlat
+  setTimeout(()=>{ addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
 }
 
 window.doLogout = async function() {
@@ -521,28 +808,32 @@ window.doLogout = async function() {
   ME=null; S={workers:[],tasks:[],hedefler:[],rehberler:[]};
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app-screen').style.display='none';
-  document.getElementById('li-email').value='';
+  document.getElementById('li-username').value='';
   document.getElementById('li-pass').value='';
   document.getElementById('li-btn').disabled=false;
   document.getElementById('li-btn').textContent='Daxil ol';
 };
 
 // ── SESSION CHECK ─────────────────────────────────────────────────────────────
-onAuthStateChanged(auth, async user=>{
-  if(user) {
-    try {
-      const snap=await get(ref(db,'ppcdata'));
-      const d=snap.val();
-      if(d?.workers?.length)  S.workers  =d.workers;
-      if(d?.tasks?.length)    S.tasks    =d.tasks;
-      if(d?.hedefler?.length) S.hedefler =d.hedefler;
-      if(d?.rehberler?.length)S.rehberler=d.rehberler;
-    } catch(e){}
-    if(!S.workers.length) S.workers=DEMO_WORKERS;
-    const w=S.workers.find(x=>x.email===user.email)||DEMO_WORKERS.find(x=>x.email===user.email);
-    if(w){ ME=w; startListener(); enterApp(); } else buildQuickLogin();
-  } else { buildQuickLogin(); }
-});
+// localStorage-dən session yoxla
+(function checkSession(){
+  try{
+    const s=JSON.parse(localStorage.getItem('ppc_isci_session')||'null');
+    if(s && Date.now()-s.ts < 86400000*7 && s.workerId){
+      get(ref(db,'ppcdata')).then(snap=>{
+        const d=snap.val()||{};
+        if(d.workers?.length) S.workers=d.workers;
+        if(d.tasks?.length)   S.tasks=d.tasks;
+        if(d.hedefler?.length)S.hedefler=d.hedefler;
+        if(d.rehberler?.length)S.rehberler=d.rehberler;
+        if(!S.workers.length) S.workers=DEMO_WORKERS;
+        const w=S.workers.find(x=>x.id===s.workerId)||DEMO_WORKERS.find(x=>x.id===s.workerId);
+        if(w){ ME=w; startListener(); enterApp(); }
+      }).catch(()=>{});
+      return;
+    }
+  }catch(e){}
+})();
 
 // ── SIDEBAR UPDATE ────────────────────────────────────────────────────────────
 function updateSidebar() {
