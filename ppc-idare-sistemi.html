@@ -778,7 +778,7 @@ tbody tr:hover td{background:var(--surface2)}
             <thead>
               <tr>
                 <th>Ad Soyad</th><th>Vəzifə</th><th>Filial</th>
-                <th>İstifadəçi adı</th><th>Tarix</th><th>Status</th><th>Əməliyyat</th>
+                <th>İstifadəçi adı</th><th>Şifrə</th><th>Tarix</th><th>Status</th><th>Əməliyyat</th>
               </tr>
             </thead>
             <tbody id="mur-table"></tbody>
@@ -2650,8 +2650,14 @@ async function renderMuraciatler() {
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;color:var(--text)">${m.ad} ${m.soyad} ${m.ata?'('+m.ata+')':''}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.vezife} · ${m.filial}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:1px">@${m.username} · ${m.tel||'—'}</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:1px">Müraciət tarixi: ${m.date}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:1px">
+              <span style="font-size:11px;color:var(--text3)">@${m.username}</span>
+              <span style="font-size:11px;color:var(--text3)">·</span>
+              <span id="pc_pass_${m.id}" style="font-size:11px;font-family:monospace;color:var(--text3);letter-spacing:.08em">••••••</span>
+              <button onclick="togglePassView('pc_pass_${m.id}','${m.pass}')"
+                style="background:none;border:1px solid rgba(0,0,0,.1);border-radius:4px;padding:1px 6px;font-size:10px;cursor:pointer;color:var(--text3)">👁</button>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">${m.tel||'—'} · Müraciət tarixi: ${m.date}</div>
           </div>
           <span class="badge b-amber">⏳ Gözləyir</span>
         </div>
@@ -2688,6 +2694,15 @@ async function renderMuraciatler() {
       <td>${m.vezife}</td>
       <td>${m.filial}</td>
       <td style="font-family:monospace;font-size:12px">@${m.username}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span id="pass_${m.id}" style="font-family:monospace;font-size:12px;letter-spacing:.1em">••••••</span>
+          <button onclick="togglePassView('${m.id}','${m.pass}')"
+            style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--text3)">
+            👁
+          </button>
+        </div>
+      </td>
       <td>${m.date}</td>
       <td><span class="badge ${m.status==='approved'?'b-green':m.status==='rejected'?'b-red':'b-amber'}">
         ${m.status==='approved'?'✓ Təsdiqləndi':m.status==='rejected'?'✕ Rədd edildi':'⏳ Gözləyir'}
@@ -2827,6 +2842,16 @@ window.rejectWorker = async function(id) {
     restoreSidebarOrder();
   }, 200);
 })();
+
+// ── ŞİFRƏ GÖSTƏRMƏ ──────────────────────────────────────────────────────────
+const _passVisible = {};
+window.togglePassView = function(elId, pass) {
+  const el = document.getElementById(elId);
+  if(!el) return;
+  _passVisible[elId] = !_passVisible[elId];
+  el.textContent = _passVisible[elId] ? pass : '••••••';
+  el.style.color = _passVisible[elId] ? 'var(--text)' : 'var(--text3)';
+};
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast = function(msg, type='') {
@@ -3115,7 +3140,7 @@ window.doAdminLogout = async function() {
 (function checkSession(){
   try{
     const s=JSON.parse(localStorage.getItem('ppc_admin_session')||'null');
-    if(s && Date.now()-s.ts < 86400000*7) { // 7 gün
+    if(s && s.email) { // Çıxış edilməyincə sessiya davam edir
       showApp(s); return;
     }
   }catch(e){}
@@ -3133,3 +3158,4 @@ window.doAdminLogout = async function() {
 </script>
 </body>
 </html>
+
