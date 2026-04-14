@@ -409,7 +409,7 @@ tbody tr:hover td{background:var(--surface2)}
   <div class="sidebar-footer">
     <div class="sf-user">
       <div class="sf-av" id="sf-av">RH</div>
-      <div><div class="sf-name">Rəhbərlik</div><div class="sf-role" id="sf-role-el">Admin · Baş Ofis</div></div>
+      <div><div class="sf-name">Rəhbərlik</div><div class="sf-role" id="sf-role-el">Admin · Azadlıq (Baş Ofis)</div></div>
     </div>
     <button onclick="doAdminLogout()" style="width:100%;padding:7px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.35);font-size:11.5px;cursor:pointer;font-family:inherit;transition:.15s;margin-top:8px" onmouseover="this.style.borderColor='rgba(217,79,61,.5)';this.style.color='#F87171'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.35)'">
       ← Çıxış
@@ -812,7 +812,7 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
       <div class="fg"><label class="fl">Filial</label>
         <select class="fs" id="w-branch">
-          <option>Baş Ofis</option><option>Filial 1</option><option>Filial 2</option><option>Filial 3</option>
+          <option>Azadlıq (Baş Ofis)</option><option>Nərimanov</option><option>Xırdalan</option><option>Sumqayıt</option><option>Gəncə</option><option>Quba</option><option>Lənkəran</option>
         </select>
       </div>
     </div>
@@ -842,7 +842,7 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="modal-title">Pasiyent Məlumatı Əlavə et <button class="modal-close" onclick="closeModal('modal-pasient')">×</button></div>
     <div class="fg"><label class="fl">Mərkəz / Filial</label>
       <select class="fs" id="pa-branch">
-        <option>Baş Ofis</option><option>Filial 1</option><option>Filial 2</option><option>Filial 3</option>
+        <option>Azadlıq (Baş Ofis)</option><option>Nərimanov</option><option>Xırdalan</option><option>Sumqayıt</option><option>Gəncə</option><option>Quba</option><option>Lənkəran</option>
       </select>
     </div>
     <div class="fg"><label class="fl">Psixoloq (istəyə bağlı)</label><select class="fs" id="pa-worker"></select></div>
@@ -879,7 +879,7 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
     <div class="fg"><label class="fl">Cavabdeh şöbə / filial</label>
       <select class="fs" id="rh-scope-sel">
-        <option>Baş Ofis</option><option>Filial 1</option><option>Filial 2</option><option>Filial 3</option>
+        <option>Azadlıq (Baş Ofis)</option><option>Nərimanov</option><option>Xırdalan</option><option>Sumqayıt</option><option>Gəncə</option><option>Quba</option><option>Lənkəran</option>
         <option>Klinik Psixologiya</option><option>Zəng Mərkəzi</option><option>Marketinq</option><option>Satış</option>
       </select>
     </div>
@@ -981,7 +981,7 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="form-row">
       <div class="fg"><label class="fl">Filial</label>
         <select class="fs" id="vak-branch">
-          <option>Baş Ofis</option><option>Filial 1</option><option>Filial 2</option><option>Filial 3</option>
+          <option>Azadlıq (Baş Ofis)</option><option>Nərimanov</option><option>Xırdalan</option><option>Sumqayıt</option><option>Gəncə</option><option>Quba</option><option>Lənkəran</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Növ</label>
@@ -1019,7 +1019,7 @@ tbody tr:hover td{background:var(--surface2)}
         <option>Satış</option><option>İnzibati</option>
       </select></div>
       <div class="fg"><label class="fl">Filial</label><select class="fs" id="yg-branch">
-        <option>Baş Ofis</option><option>Filial 1</option><option>Filial 2</option><option>Filial 3</option>
+        <option>Azadlıq (Baş Ofis)</option><option>Nərimanov</option><option>Xırdalan</option><option>Sumqayıt</option><option>Gəncə</option><option>Quba</option><option>Lənkəran</option>
       </select></div>
     </div>
     <div class="form-row">
@@ -1085,14 +1085,14 @@ function sorted(){ return [...S.workers].sort((a,b)=>getPts(b.id)-getPts(a.id));
 
 function seedData() {
   S.workers = [
-    {id:'w1',name:'Leyla Əliyeva',   role:'Psixoloq',              dept:'Klinik Psixologiya',branch:'Baş Ofis', color:COLORS[0]},
-    {id:'w2',name:'Rauf Hüseynov',   role:'Zəng Mərkəzi Operatoru',dept:'Zəng Mərkəzi',      branch:'Filial 1',color:COLORS[1]},
-    {id:'w3',name:'Aynur Məmmədova', role:'Diaqnostika Mütəxəssisi',dept:'Klinik Psixologiya',branch:'Baş Ofis', color:COLORS[2]},
-    {id:'w4',name:'Tural Quliyev',   role:'Satış Meneceri',        dept:'Satış',             branch:'Filial 2',color:COLORS[3]},
-    {id:'w5',name:'Sevinc Nəcəfova', role:'Marketinq Meneceri',    dept:'Marketinq',         branch:'Baş Ofis', color:COLORS[4]},
-    {id:'w6',name:'Nigar Rəsulova',  role:'Loqoped',               dept:'Klinik Psixologiya',branch:'Filial 1',color:COLORS[5]},
-    {id:'w7',name:'Orxan Babayev',   role:'Sosial Media Meneceri', dept:'Marketinq',         branch:'Baş Ofis', color:COLORS[6]},
-    {id:'w8',name:'Günel İsmayılova',role:'Resepsion',             dept:'İnzibati',          branch:'Baş Ofis', color:COLORS[7]},
+    {id:'w1',name:'Leyla Əliyeva',   role:'Psixoloq',              dept:'Klinik Psixologiya',branch:'Azadlıq (Baş Ofis)', color:COLORS[0]},
+    {id:'w2',name:'Rauf Hüseynov',   role:'Zəng Mərkəzi Operatoru',dept:'Zəng Mərkəzi',      branch:'Nərimanov',color:COLORS[1]},
+    {id:'w3',name:'Aynur Məmmədova', role:'Diaqnostika Mütəxəssisi',dept:'Klinik Psixologiya',branch:'Azadlıq (Baş Ofis)', color:COLORS[2]},
+    {id:'w4',name:'Tural Quliyev',   role:'Satış Meneceri',        dept:'Satış',             branch:'Xırdalan',color:COLORS[3]},
+    {id:'w5',name:'Sevinc Nəcəfova', role:'Marketinq Meneceri',    dept:'Marketinq',         branch:'Azadlıq (Baş Ofis)', color:COLORS[4]},
+    {id:'w6',name:'Nigar Rəsulova',  role:'Loqoped',               dept:'Klinik Psixologiya',branch:'Nərimanov',color:COLORS[5]},
+    {id:'w7',name:'Orxan Babayev',   role:'Sosial Media Meneceri', dept:'Marketinq',         branch:'Azadlıq (Baş Ofis)', color:COLORS[6]},
+    {id:'w8',name:'Günel İsmayılova',role:'Resepsion',             dept:'İnzibati',          branch:'Azadlıq (Baş Ofis)', color:COLORS[7]},
   ];
   S.tasks = [
     {id:'t1',name:'20 zəng cavabla və qeydiyyat aç',   cat:'Zəng Mərkəzi', wid:'w2',pts:20,priority:'high',deadline:today(),  done:true, date:today()},
@@ -1114,10 +1114,10 @@ function seedData() {
   const cm = new Date().getMonth()+1;
   S.pasientler = [];
   const bData = [
-    {branch:'Baş Ofis',   counts:[62,71,68,75,80,84,79,88,91,85,90,96]},
-    {branch:'Filial 1',   counts:[38,42,45,40,48,52,49,55,58,54,60,63]},
-    {branch:'Filial 2',   counts:[24,28,31,27,33,35,38,32,36,40,38,44]},
-    {branch:'Filial 3',   counts:[15,17,14,19,21,18,23,20,25,22,27,24]},
+    {branch:'Azadlıq (Baş Ofis)',   counts:[62,71,68,75,80,84,79,88,91,85,90,96]},
+    {branch:'Nərimanov',   counts:[38,42,45,40,48,52,49,55,58,54,60,63]},
+    {branch:'Xırdalan',   counts:[24,28,31,27,33,35,38,32,36,40,38,44]},
+    {branch:'Sumqayıt',   counts:[15,17,14,19,21,18,23,20,25,22,27,24]},
   ];
   bData.forEach(b=>{
     b.counts.forEach((count,i)=>{
@@ -1127,24 +1127,24 @@ function seedData() {
   // Seed hədəflər
   const td2 = new Date(); td2.setMonth(td2.getMonth()+1);
   S.hedefler = [
-    {id:'h1',name:'Aylıq 500 pasiyent qəbulu',cat:'Pasiyent sayı',type:'branch',target:'Baş Ofis',value:500,current:342,deadline:td2.toISOString().slice(0,10),done:false,note:''},
+    {id:'h1',name:'Aylıq 500 pasiyent qəbulu',cat:'Pasiyent sayı',type:'branch',target:'Azadlıq (Baş Ofis)',value:500,current:342,deadline:td2.toISOString().slice(0,10),done:false,note:''},
     {id:'h2',name:'Zəng cavablandırma 90%',cat:'Zəng hədəfi',type:'dept',target:'Zəng Mərkəzi',value:90,current:74,deadline:td2.toISOString().slice(0,10),done:false,note:''},
     {id:'h3',name:'10 yeni daimi müştəri',cat:'Satış hədəfi',type:'dept',target:'Satış',value:10,current:7,deadline:td2.toISOString().slice(0,10),done:false,note:''},
     {id:'h4',name:'Xal hədəfi 1000+',cat:'Xal hədəfi',type:'personal',target:'w2',value:1000,current:getPts('w2'),deadline:td2.toISOString().slice(0,10),done:false,note:''},
   ];
   // Seed vakansiyalar
   S.vakansiyalar = [
-    {id:'v1',title:'Klinik Psixoloq',dept:'Klinik Psixologiya',branch:'Filial 2',type:'Tam ştat',salary:'900-1300 AZN',apps:8,note:'Uşaq psixologiyası təcrübəsi üstünlük',status:'open',date:'2025-04-01'},
-    {id:'v2',title:'Zəng Mərkəzi Operatoru',dept:'Zəng Mərkəzi',branch:'Baş Ofis',type:'Tam ştat',salary:'600-800 AZN',apps:14,note:'',status:'open',date:'2025-04-10'},
-    {id:'v3',title:'Loqoped',dept:'Klinik Psixologiya',branch:'Filial 1',type:'Part-time',salary:'500-700 AZN',apps:3,note:'Nitq pozğunluqları üzrə ixtisas',status:'open',date:'2025-03-20'},
-    {id:'v4',title:'SMM Mütəxəssisi',dept:'Marketinq',branch:'Baş Ofis',type:'Müqaviləli',salary:'700-1000 AZN',apps:11,note:'',status:'closed',date:'2025-02-15'},
+    {id:'v1',title:'Klinik Psixoloq',dept:'Klinik Psixologiya',branch:'Xırdalan',type:'Tam ştat',salary:'900-1300 AZN',apps:8,note:'Uşaq psixologiyası təcrübəsi üstünlük',status:'open',date:'2025-04-01'},
+    {id:'v2',title:'Zəng Mərkəzi Operatoru',dept:'Zəng Mərkəzi',branch:'Azadlıq (Baş Ofis)',type:'Tam ştat',salary:'600-800 AZN',apps:14,note:'',status:'open',date:'2025-04-10'},
+    {id:'v3',title:'Loqoped',dept:'Klinik Psixologiya',branch:'Nərimanov',type:'Part-time',salary:'500-700 AZN',apps:3,note:'Nitq pozğunluqları üzrə ixtisas',status:'open',date:'2025-03-20'},
+    {id:'v4',title:'SMM Mütəxəssisi',dept:'Marketinq',branch:'Azadlıq (Baş Ofis)',type:'Müqaviləli',salary:'700-1000 AZN',apps:11,note:'',status:'closed',date:'2025-02-15'},
   ];
   // Seed yeni gələn işçilər
   const daysAgo = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
   S.yeniGelenler = [
-    {id:'yg1',name:'Aytən Quliyeva',role:'Psixoloq',dept:'Klinik Psixologiya',branch:'Filial 2',startDate:daysAgo(12),mentor:'w1',day30done:true,day60done:false,day90done:false,note:'Uşaq qrupu üzrə ixtisaslaşır'},
-    {id:'yg2',name:'Kamran Əliyev',role:'Zəng Mərkəzi Operatoru',dept:'Zəng Mərkəzi',branch:'Baş Ofis',startDate:daysAgo(45),mentor:'w2',day30done:true,day60done:true,day90done:false,note:''},
-    {id:'yg3',name:'Nərmin Babayeva',role:'Resepsion',dept:'İnzibati',branch:'Filial 1',startDate:daysAgo(78),mentor:'w8',day30done:true,day60done:true,day90done:false,note:'90 günlük yekun görüşü planlanıb'},
+    {id:'yg1',name:'Aytən Quliyeva',role:'Psixoloq',dept:'Klinik Psixologiya',branch:'Xırdalan',startDate:daysAgo(12),mentor:'w1',day30done:true,day60done:false,day90done:false,note:'Uşaq qrupu üzrə ixtisaslaşır'},
+    {id:'yg2',name:'Kamran Əliyev',role:'Zəng Mərkəzi Operatoru',dept:'Zəng Mərkəzi',branch:'Azadlıq (Baş Ofis)',startDate:daysAgo(45),mentor:'w2',day30done:true,day60done:true,day90done:false,note:''},
+    {id:'yg3',name:'Nərmin Babayeva',role:'Resepsion',dept:'İnzibati',branch:'Nərimanov',startDate:daysAgo(78),mentor:'w8',day30done:true,day60done:true,day90done:false,note:'90 günlük yekun görüşü planlanıb'},
   ];
   // Seed rəhbərlər
   S.rehberler = [
@@ -1799,7 +1799,7 @@ window.renderAyMerkezi = function() {
       <div class="mc-sub">${branches.length} mərkəzdən</div></div>`;
 
   // TOP MƏRKƏZLƏR SİYAHISI — əsas funksionallıq
-  const BRANCH_COLORS = {'Baş Ofis':'#1B3A6B','Filial 1':'#0A7C6E','Filial 2':'#E8931A','Filial 3':'#7B4FB8'};
+  const BRANCH_COLORS = {'Azadlıq (Baş Ofis)':'#1B3A6B','Nərimanov':'#0A7C6E','Xırdalan':'#E8931A','Sumqayıt':'#7B4FB8','Gəncə':'#D94F3D','Quba':'#06B6D4','Lənkəran':'#2E8B57'};
   const maxT = topBranch?.total||1;
 
   document.getElementById('am-top-list').innerHTML = byBranch.length ? `
@@ -1853,7 +1853,7 @@ window.renderAyMerkezi = function() {
     };
   });
   const maxBar = Math.max(...allMonths.map(m=>m.total),1);
-  const BCOLS = ['#1B3A6B','#0A7C6E','#E8931A','#7B4FB8'];
+  const BCOLS = ['#1B3A6B','#0A7C6E','#E8931A','#7B4FB8','#D94F3D','#06B6D4','#2E8B57'];
   const barW=40, gap=8, H=110, sX=8;
   const svgW2 = sX + 12*(barW+gap) + 10;
   document.getElementById('am-monthly-chart').innerHTML = `
