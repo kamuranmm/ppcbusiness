@@ -257,6 +257,17 @@ tbody tr:hover td{background:var(--surface2)}
   #vak-list{grid-template-columns:1fr !important}
 }
 
+/* ── SIDEBAR DRAG ── */
+.nav-group{position:relative;cursor:default}
+.nav-group-handle{
+  position:absolute;right:6px;top:3px;opacity:0;cursor:grab;
+  color:rgba(255,255,255,.25);font-size:14px;line-height:1;
+  transition:opacity .2s;user-select:none
+}
+.nav-group:hover .nav-group-handle{opacity:1}
+.nav-group.dragging{opacity:.5;background:rgba(255,255,255,.05);border-radius:6px}
+.nav-group.drag-over{background:rgba(30,95,173,.2);border-radius:6px;outline:1.5px dashed rgba(91,155,248,.5)}
+
 @media(max-width:480px){
   .g4{grid-template-columns:1fr 1fr}
   .g2{grid-template-columns:1fr}
@@ -267,6 +278,12 @@ tbody tr:hover td{background:var(--surface2)}
   .tab-btn{white-space:nowrap;flex-shrink:0}
 }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B3A6B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PPC Sistem">
+<link rel="apple-touch-icon" href="ppc-icon-192.png">
 </head>
 <body>
 <!-- ══ ADMIN LOGIN ══ -->
@@ -280,7 +297,7 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
     <div style="background:rgba(255,255,255,.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:32px 28px">
       <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:4px">Xoş gəldiniz</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:22px">Admin hesabınızla daxil olun</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:22px">Sistem admin hesabı ilə daxil olun</div>
       <div id="al-err" style="display:none;background:rgba(217,79,61,.15);border:1px solid rgba(217,79,61,.4);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#F87171;margin-bottom:14px"></div>
       <div style="margin-bottom:13px">
         <div style="font-size:11.5px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:5px">Email</div>
@@ -296,26 +313,7 @@ tbody tr:hover td{background:var(--surface2)}
         style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
         Daxil ol
       </button>
-      <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,.08);padding-top:16px">
-        <div style="font-size:10px;color:rgba(255,255,255,.2);text-align:center;margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">Demo hesablar</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-          <button onclick="document.getElementById('al-email').value='admin@ppc.az';document.getElementById('al-pass').value='Admin2024'"
-            style="padding:7px 8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;font-family:inherit;text-align:left">
-            <div style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.7)">Baş Admin</div>
-            <div style="font-size:9.5px;color:rgba(255,255,255,.3)">Super Admin</div>
-          </button>
-          <button onclick="document.getElementById('al-email').value='rehber@ppc.az';document.getElementById('al-pass').value='Rehber2024'"
-            style="padding:7px 8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;font-family:inherit;text-align:left">
-            <div style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.7)">Rəhbərlik</div>
-            <div style="font-size:9.5px;color:rgba(255,255,255,.3)">Rəhbər</div>
-          </button>
-          <button onclick="document.getElementById('al-email').value='kamran@ppc.az';document.getElementById('al-pass').value='Kamran2024'"
-            style="padding:7px 8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;font-family:inherit;text-align:left">
-            <div style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.7)">Kamran</div>
-            <div style="font-size:9.5px;color:rgba(255,255,255,.3)">Sistem Admini</div>
-          </button>
-        </div>
-      </div>
+
     </div>
   </div>
 </div>
@@ -339,14 +337,14 @@ tbody tr:hover td{background:var(--surface2)}
 
   <nav class="nav">
     <div class="nav-group">
-      <div class="nav-group-label">Əsas</div>
+      <div class="nav-group-label">Əsas<span class="nav-group-handle" title="Yeri dəyiş">⠿</span></div>
       <button class="nav-item active" onclick="go('dash',this)">
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         İdarə Paneli
       </button>
     </div>
     <div class="nav-group">
-      <div class="nav-group-label">Əməliyyat</div>
+      <div class="nav-group-label">Əməliyyat<span class="nav-group-handle" title="Yeri dəyiş">⠿</span></div>
       <button class="nav-item" onclick="go('tasks',this)">
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
         Tapşırıqlar
@@ -362,7 +360,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="nav-group">
-      <div class="nav-group-label">Analitika</div>
+      <div class="nav-group-label">Analitika<span class="nav-group-handle" title="Yeri dəyiş">⠿</span></div>
       <button class="nav-item" onclick="go('leader',this)">
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
         Liderboard
@@ -377,10 +375,10 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="nav-group">
-      <div class="nav-group-label">İdarəetmə</div>
-      <button class="nav-item" onclick="go('aymerkezi',this)">
+      <div class="nav-group-label">İdarəetmə<span class="nav-group-handle" title="Yeri dəyiş">⠿</span></div>
+      <button class="nav-item" onclick="go('filialstat',this)">
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Ay Mərkəzi
+        Filial Statistikası
       </button>
       <button class="nav-item" onclick="go('rehberler',this)">
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M12 14v6m-3-3h6"/></svg>
@@ -402,6 +400,11 @@ tbody tr:hover td{background:var(--surface2)}
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Risk Hovuzu
         <span class="nav-badge" id="risk-badge" style="background:var(--red)">0</span>
+      </button>
+      <button class="nav-item" onclick="go('muraciatlər',this)">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Yeni Müraciətlər
+        <span class="nav-badge" id="mur-badge" style="background:var(--green)">0</span>
       </button>
     </div>
   </nav>
@@ -592,37 +595,48 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
 
     <!-- ══════════ AY MƏRKƏZİ ══════════ -->
-    <div id="page-aymerkezi" class="page">
-      <!-- Ay + İl seçimi + əlavə düyməsi -->
+    <div id="page-filialstat" class="page">
+      <!-- Filtr sətri -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 14px">
-          <span style="font-size:12px;color:var(--text3);font-weight:600">Ay:</span>
-          <select class="fs" id="am-month-sel" onchange="renderAyMerkezi()" style="border:none;background:none;font-size:13px;font-weight:600;color:var(--text);padding:0;min-width:90px"></select>
-          <select class="fs" id="am-year-sel" onchange="renderAyMerkezi()" style="border:none;background:none;font-size:13px;color:var(--text2);padding:0;min-width:55px"></select>
+        <div style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 12px">
+          <span style="font-size:11.5px;color:var(--text3);font-weight:600">Ay:</span>
+          <select id="fs-month" onchange="renderFilialStat()" style="border:none;background:none;font-size:13px;font-weight:600;color:var(--text);padding:0;min-width:88px;outline:none"></select>
+          <select id="fs-year" onchange="renderFilialStat()" style="border:none;background:none;font-size:13px;color:var(--text2);padding:0;min-width:52px;outline:none"></select>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <label style="font-size:11.5px;color:var(--text3);font-weight:600">Filial:</label>
+          <select id="fs-filial" onchange="renderFilialStat()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);color:var(--text);outline:none">
+            <option value="all">Hamısı</option>
+            <option>Azadlıq (Baş Ofis)</option><option>Nərimanov</option>
+            <option>Xırdalan</option><option>Sumqayıt</option>
+            <option>Gəncə</option><option>Quba</option><option>Lənkəran</option>
+          </select>
         </div>
         <button class="btn btn-primary" onclick="openModal('modal-pasient')">+ Pasiyent məlumatı daxil et</button>
-        <div style="margin-left:auto;font-size:12px;color:var(--text3)">Həmin ay üzrə mərkəzlər müqayisə edilir</div>
       </div>
 
-      <div class="g4" id="am-metrics"></div>
+      <div class="g4" id="fs-metrics"></div>
+
+      <!-- Filial sıralama kartları -->
+      <div class="card mb16">
+        <div class="card-hdr">
+          <span class="card-title">🏆 Filial Sıralaması — <span id="fs-month-label"></span></span>
+          <div style="display:flex;gap:6px">
+            <span class="badge b-blue" id="fs-active-badge">0 filial</span>
+          </div>
+        </div>
+        <div id="fs-rank-cards"></div>
+      </div>
 
       <div class="g2">
         <div class="card">
-          <div class="card-hdr">
-            <span class="card-title">🏆 Mərkəz Sıralaması</span>
-            <span class="badge b-amber" style="font-size:10px" id="am-month-badge">Bu ay</span>
-          </div>
-          <div id="am-top-list"></div>
+          <div class="card-hdr"><span class="card-title">📈 İl boyu Dinamika</span></div>
+          <div id="fs-chart"></div>
         </div>
         <div class="card">
-          <div class="card-hdr"><span class="card-title">📅 İl boyu Dinamika — Mərkəz üzrə</span></div>
-          <div id="am-monthly-chart"></div>
+          <div class="card-hdr"><span class="card-title">📊 Müqayisəli Cədvəl</span></div>
+          <div class="table-wrap"><table id="fs-table"></table></div>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="card-hdr"><span class="card-title">📊 Ay üzrə Mərkəz Müqayisəsi</span></div>
-        <div class="table-wrap"><table id="am-table"></table></div>
       </div>
     </div>
 
@@ -734,6 +748,42 @@ tbody tr:hover td{background:var(--surface2)}
           <span class="card-title">💡 Müdaxilə Tövsiyələri</span>
         </div>
         <div id="risk-advice"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ MÜRACİƏTLƏR ══════════ -->
+    <div id="page-muraciatlər" class="page">
+      <div class="g4" id="mur-metrics"></div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-title">⏳ Gözləyən Müraciətlər</span>
+            <span class="badge b-amber" id="mur-pending-badge">0 müraciət</span>
+          </div>
+          <div id="mur-pending-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-title">✅ Təsdiqlənmiş İşçilər</span>
+          </div>
+          <div id="mur-approved-list"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-title">📋 Bütün Müraciətlər</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ad Soyad</th><th>Vəzifə</th><th>Filial</th>
+                <th>İstifadəçi adı</th><th>Tarix</th><th>Status</th><th>Əməliyyat</th>
+              </tr>
+            </thead>
+            <tbody id="mur-table"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -1196,7 +1246,7 @@ window.go = function(id, el) {
     const map={dash:0,tasks:1,funnel:2,workers:3,leader:4,analytics:5,report:6};
     document.querySelectorAll('.nav-item')[map[id]]?.classList.add('active');
   }
-  const titles={dash:'İdarə Paneli',tasks:'Tapşırıqlar',funnel:'Müştəri Funnel & CRM',workers:'İşçilər & KPI',leader:'Liderboard',analytics:'Analitika',report:'Ay Hesabatı',aymerkezi:'Ay Mərkəzi — Pasiyent Statistikası',rehberler:'Rəhbərlər & Kuratorluq Sistemi',hedefler:'Hədəflər',vakansiya:'Vakansiya İdarəetməsi',yenigelen:'Yeni Gələn İşçilər',risk:'Risk Hovuzu — Performans Xəbərdarlığı'};
+  const titles={dash:'İdarə Paneli',tasks:'Tapşırıqlar',funnel:'Müştəri Funnel & CRM',workers:'İşçilər & KPI',leader:'Liderboard',analytics:'Analitika',report:'Ay Hesabatı',filialstat:'Filial Statistikası',rehberler:'Rəhbərlər & Kuratorluq Sistemi',hedefler:'Hədəflər',vakansiya:'Vakansiya İdarəetməsi',yenigelen:'Yeni Gələn İşçilər',risk:'Risk Hovuzu — Performans Xəbərdarlığı',muraciatlər:'Yeni İşçi Müraciətləri'};
   document.getElementById('tb-title').textContent = titles[id]||id;
   renderPage(id);
   populateWorkerSelects();
@@ -1210,12 +1260,13 @@ function renderPage(id) {
   else if(id==='leader') renderLeader();
   else if(id==='analytics') renderAnalytics();
   else if(id==='report') renderReport();
-  else if(id==='aymerkezi') renderAyMerkezi();
+  else if(id==='filialstat') renderFilialStat();
   else if(id==='rehberler') renderRehberler();
   else if(id==='hedefler')  renderHedefler();
   else if(id==='vakansiya') renderVakansiya();
   else if(id==='yenigelen') renderYeniGelen();
   else if(id==='risk')      renderRisk();
+  else if(id==='muraciatlər') renderMuraciatler();
 }
 
 function refreshAll() {
@@ -1224,6 +1275,13 @@ function refreshAll() {
   const riskBadge=document.getElementById('risk-badge');
   const rLimit=parseInt(document.getElementById('risk-limit')?.value||200);
   if(riskBadge) riskBadge.textContent=S.workers.filter(w=>getPts(w.id)<rLimit).length;
+  // Müraciət badgeni yenilə
+  get(ref(db,'isci_muraciatleri')).then(snap=>{
+    const d=snap.val()||{};
+    const p=Object.values(d).filter(m=>m.status==='pending').length;
+    const b=document.getElementById('mur-badge');
+    if(b){b.textContent=p; b.style.display=p>0?'':'none';}
+  }).catch(()=>{});
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
@@ -1612,11 +1670,33 @@ function renderReport() {
 }
 
 // ── MODALS ────────────────────────────────────────────────────────────────────
-function populateWorkerSelects() {
+async function populateWorkerSelects() {
+  // Firebase-dən təsdiqlənmiş işçiləri yüklə
+  let allWorkers = [...S.workers];
+  try {
+    const snap = await get(ref(db,'isci_muraciatleri'));
+    const data = snap.val()||{};
+    const approved = Object.values(data).filter(m=>m.status==='approved');
+    approved.forEach(m=>{
+      const wid = m.workerId||'w_'+m.id;
+      if(!allWorkers.find(w=>w.id===wid||w.username===m.username)){
+        allWorkers.push({
+          id: wid,
+          name: m.ad+' '+m.soyad,
+          role: m.vezife,
+          dept: m.vezife,
+          branch: m.filial,
+          username: m.username,
+          color:'#1E5FAD'
+        });
+      }
+    });
+  } catch(e){}
+
   ['t-worker'].forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
     const prev=el.value;
-    el.innerHTML=S.workers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+    el.innerHTML=allWorkers.map(w=>`<option value="${w.id}">${w.name} — ${w.role}</option>`).join('');
     if(prev) el.value=prev;
   });
 }
@@ -1648,8 +1728,8 @@ window.openModal = function(id) {
     const bsel=document.getElementById('pa-branch');
     if(bsel){
       // Aktiv seçilmiş ayı da göstər
-      const mSel=document.getElementById('am-month-sel');
-      const ySel=document.getElementById('am-year-sel');
+      const mSel=document.getElementById('fs-month');
+      const ySel=document.getElementById('fs-year');
       if(mSel&&mSel.value) document.getElementById('pa-month').value=mSel.value;
       if(ySel&&ySel.value) document.getElementById('pa-year').value=ySel.value;
     }
@@ -1690,7 +1770,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
 window.saveTask = function() {
   const name=document.getElementById('t-name').value.trim();
   if(!name){toast('Ad daxil edin','error');return;}
-  S.tasks.push({
+  const newTask = {
     id:'t'+Date.now(), name,
     cat:document.getElementById('t-cat').value,
     wid:document.getElementById('t-worker').value,
@@ -1700,9 +1780,12 @@ window.saveTask = function() {
     done:false,
     note:document.getElementById('t-note').value,
     date:today()
-  });
+  };
+  S.tasks.push(newTask);
   saveState(); closeModal('modal-task'); refreshAll();
-  toast('Tapşırıq əlavə edildi ✓','success');
+  // Bildiriş göndər
+  sendTaskNotification(newTask.wid, newTask.name, 'Admin');
+  toast('Tapşırıq əlavə edildi ✓ Bildiriş göndərildi','success');
 }
 
 window.saveWorker = function() {
@@ -1730,174 +1813,179 @@ window.saveFunnel = function() {
 // ── AY MƏRKƏZİ ──────────────────────────────────────────────────────────────────
 const MONTHS_AZ = ['','Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
 
-window.renderAyMerkezi = function() {
-  // AY seçimi + il seçimi
-  const monthSel = document.getElementById('am-month-sel');
-  const yearSel  = document.getElementById('am-year-sel');
+window.renderFilialStat = function() {
+  const MONTHS = ['','Yanvar','Fevral','Mart','Aprel','May','İyun','İyul','Avqust','Sentyabr','Oktyabr','Noyabr','Dekabr'];
+  const BRANCHES = ['Azadlıq (Baş Ofis)','Nərimanov','Xırdalan','Sumqayıt','Gəncə','Quba','Lənkəran'];
+  const BCOLS = ['#1B3A6B','#0A7C6E','#E8931A','#7B4FB8','#D94F3D','#06B6D4','#2E8B57'];
   const now = new Date();
 
-  const years = [...new Set(S.pasientler.map(p=>p.year))].sort((a,b)=>b-a);
-  if(!years.includes(now.getFullYear())) years.unshift(now.getFullYear());
-  if(yearSel) {
-    const curY = yearSel.value || now.getFullYear();
-    yearSel.innerHTML = years.map(y=>`<option value="${y}" ${y==curY?'selected':''}>${y}</option>`).join('');
-  }
-  if(monthSel && !monthSel.innerHTML) {
-    monthSel.innerHTML = MONTHS_AZ.slice(1).map((m,i)=>
+  // Month/Year selects init
+  const mSel = document.getElementById('fs-month');
+  const ySel = document.getElementById('fs-year');
+  if(mSel && !mSel.innerHTML) {
+    mSel.innerHTML = MONTHS.slice(1).map((m,i)=>
       `<option value="${i+1}" ${(i+1)===now.getMonth()+1?'selected':''}>${m}</option>`).join('');
   }
+  const years = [...new Set(S.pasientler.map(p=>p.year))].sort((a,b)=>b-a);
+  if(!years.includes(now.getFullYear())) years.unshift(now.getFullYear());
+  if(ySel && !ySel.innerHTML) {
+    ySel.innerHTML = years.map(y=>`<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`).join('');
+  }
 
-  const selYear  = parseInt(yearSel?.value  || now.getFullYear());
-  const selMonth = parseInt(monthSel?.value || now.getMonth()+1);
+  const selMonth  = parseInt(mSel?.value || now.getMonth()+1);
+  const selYear   = parseInt(ySel?.value || now.getFullYear());
+  const filialFlt = document.getElementById('fs-filial')?.value || 'all';
 
-  // Bu AYın məlumatları
-  const monthData = S.pasientler.filter(p=>p.month===selMonth && p.year===selYear);
-  // Əvvəlki ayın məlumatları (artım üçün)
-  const prevMonth = selMonth===1 ? 12 : selMonth-1;
-  const prevYear  = selMonth===1 ? selYear-1 : selYear;
-  const prevData  = S.pasientler.filter(p=>p.month===prevMonth && p.year===prevYear);
+  const prevMonth = selMonth===1?12:selMonth-1;
+  const prevYear  = selMonth===1?selYear-1:selYear;
 
-  // MƏRKƏZ/FİLİAL üzrə cəmləmə (pasientler.branch üzrə, yoxdursa worker.branch)
-  const branches = [...new Set(S.workers.map(w=>w.branch))];
-  // Branch-ları həm pasientler.branch-dan, həm workers.branch-dan götür
-  const allBranches = [...new Set([
-    ...S.pasientler.map(p=>p.branch).filter(Boolean),
-    ...S.workers.map(w=>w.branch)
-  ])].filter(Boolean);
-  const byBranch = allBranches.map(branch=>{
-    const branchWorkers = S.workers.filter(w=>w.branch===branch);
-    // branch-lı məlumatlar birbaşa branch üzrə, wid-li olanlar worker üzrə
-    const total    = monthData.filter(p=>(p.branch===branch)||(p.wid&&branchWorkers.some(w=>w.id===p.wid))).reduce((s,p)=>s+p.count,0);
-    const prevTotal= prevData.filter(p=>(p.branch===branch)||(p.wid&&branchWorkers.some(w=>w.id===p.wid))).reduce((s,p)=>s+p.count,0);
-    const psixCount= branchWorkers.filter(w=>['Psixoloq','Baş Psixoloq','Loqoped','Diaqnostika'].some(r=>w.role.includes(r))).length;
-    return {branch, total, prevTotal, psixCount, workers:branchWorkers};
-  }).sort((a,b)=>b.total-a.total);
+  document.getElementById('fs-month-label').textContent = MONTHS[selMonth]+' '+selYear;
 
-  const totalMonth    = byBranch.reduce((s,b)=>s+b.total,0);
-  const topBranch     = byBranch[0];
-  const prevTotalAll  = byBranch.reduce((s,b)=>s+b.prevTotal,0);
-  const growthPct     = prevTotalAll>0 ? Math.round((totalMonth-prevTotalAll)/prevTotalAll*100) : 0;
-  const activeBranches= byBranch.filter(b=>b.total>0).length;
+  // Bu ay + əvvəlki ay məlumatları
+  const thisMonthData = S.pasientler.filter(p=>p.month===selMonth&&p.year===selYear);
+  const prevMonthData = S.pasientler.filter(p=>p.month===prevMonth&&p.year===prevYear);
+
+  // Hər filial üçün hesabla
+  const allBranches = BRANCHES;
+  let byBranch = allBranches.map((branch,bi)=>{
+    const bWorkers = S.workers.filter(w=>w.branch===branch);
+    const thisTotal = thisMonthData.filter(p=>p.branch===branch||bWorkers.some(w=>w.id===p.wid)).reduce((s,p)=>s+p.count,0);
+    const prevTotal = prevMonthData.filter(p=>p.branch===branch||bWorkers.some(w=>w.id===p.wid)).reduce((s,p)=>s+p.count,0);
+    const psixCount = bWorkers.filter(w=>['Psixoloq','Baş Psixoloq','Loqoped','Diaqnostika'].some(r=>w.role.includes(r))).length;
+    const workerCount = bWorkers.length;
+    return {branch, thisTotal, prevTotal, psixCount, workerCount, color:BCOLS[bi], bi};
+  }).sort((a,b)=>b.thisTotal-a.thisTotal);
+
+  if(filialFlt!=='all') byBranch = byBranch.filter(b=>b.branch===filialFlt);
+
+  const grandTotal = byBranch.reduce((s,b)=>s+b.thisTotal,0);
+  const prevGrand  = byBranch.reduce((s,b)=>s+b.prevTotal,0);
+  const growth     = prevGrand>0?Math.round((grandTotal-prevGrand)/prevGrand*100):0;
+  const activeCount= byBranch.filter(b=>b.thisTotal>0).length;
+  const topBranch  = byBranch[0];
+
+  document.getElementById('fs-active-badge').textContent = activeCount+' filial';
 
   // Metrics
-  document.getElementById('am-metrics').innerHTML = `
-    <div class="mc"><div class="mc-accent" style="background:#1E5FAD"></div><div class="mc-icon">👥</div>
-      <div class="mc-label">${MONTHS_AZ[selMonth]} — Ümumi Pasiyent</div>
-      <div class="mc-val">${totalMonth}</div>
-      <div class="mc-sub">Bütün mərkəzlər</div></div>
+  document.getElementById('fs-metrics').innerHTML=`
+    <div class="mc"><div class="mc-accent" style="background:#1B3A6B"></div><div class="mc-icon">👥</div>
+      <div class="mc-label">${MONTHS[selMonth]} — Ümumi Pasiyent</div>
+      <div class="mc-val">${grandTotal}</div>
+      <div class="mc-sub">${activeCount} fəal filial</div></div>
     <div class="mc"><div class="mc-accent" style="background:#E8931A"></div><div class="mc-icon">🏆</div>
-      <div class="mc-label">Lider Mərkəz</div>
-      <div class="mc-val" style="font-size:16px">${topBranch?.total>0?(topBranch.branch):'—'}</div>
-      <div class="mc-sub">${topBranch?.total>0?topBranch.total+' pasiyent':''}</div></div>
-    <div class="mc"><div class="mc-accent" style="background:${growthPct>=0?'#2E8B57':'#D94F3D'}"></div><div class="mc-icon">${growthPct>=0?'📈':'📉'}</div>
-      <div class="mc-label">Əvvəlki Aya Artım</div>
-      <div class="mc-val" style="color:${growthPct>=0?'var(--green)':'var(--red)'}">${growthPct>=0?'+':''}${growthPct}%</div>
-      <div class="mc-sub">${MONTHS_AZ[prevMonth]}: ${prevTotalAll} pasiyent</div></div>
-    <div class="mc"><div class="mc-accent" style="background:#7B4FB8"></div><div class="mc-icon">🏢</div>
-      <div class="mc-label">Aktiv Mərkəz</div>
-      <div class="mc-val">${activeBranches}</div>
-      <div class="mc-sub">${branches.length} mərkəzdən</div></div>`;
+      <div class="mc-label">Lider Filial</div>
+      <div class="mc-val" style="font-size:15px">${topBranch?.thisTotal>0?topBranch.branch.split('(')[0].trim():'—'}</div>
+      <div class="mc-sub">${topBranch?.thisTotal||0} pasiyent</div></div>
+    <div class="mc"><div class="mc-accent" style="background:${growth>=0?'#2E8B57':'#D94F3D'}"></div><div class="mc-icon">${growth>=0?'📈':'📉'}</div>
+      <div class="mc-label">Əvvəlki Aya Nisbət</div>
+      <div class="mc-val" style="color:${growth>=0?'var(--green)':'var(--red)'}">${growth>=0?'+':''}${growth}%</div>
+      <div class="mc-sub">${MONTHS[prevMonth]}: ${prevGrand} pasiyent</div></div>
+    <div class="mc"><div class="mc-accent" style="background:#7B4FB8"></div><div class="mc-icon">📊</div>
+      <div class="mc-label">Orta / Filial</div>
+      <div class="mc-val">${activeCount?Math.round(grandTotal/activeCount):0}</div>
+      <div class="mc-sub">Fəal filial başına</div></div>`;
 
-  // TOP MƏRKƏZLƏR SİYAHISI — əsas funksionallıq
-  const BRANCH_COLORS = {'Azadlıq (Baş Ofis)':'#1B3A6B','Nərimanov':'#0A7C6E','Xırdalan':'#E8931A','Sumqayıt':'#7B4FB8','Gəncə':'#D94F3D','Quba':'#06B6D4','Lənkəran':'#2E8B57'};
-  const maxT = topBranch?.total||1;
-
-  document.getElementById('am-top-list').innerHTML = byBranch.length ? `
-    <!-- CHAMPION CARD -->
-    ${byBranch[0]?.total>0 ? `
-    <div style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);border:2px solid #F59E0B;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px">
-      <div style="font-size:36px">🏆</div>
-      <div style="flex:1">
-        <div style="font-size:11px;font-weight:700;color:#92400E;letter-spacing:.06em;text-transform:uppercase">Bu Ayın Lideri — ${MONTHS_AZ[selMonth]} ${selYear}</div>
-        <div style="font-size:20px;font-weight:800;color:#78350F;margin-top:3px">${byBranch[0].branch}</div>
-        <div style="font-size:11px;color:#B45309;margin-top:2px">${byBranch[0].psixCount} psixoloq · ${byBranch[0].workers.length} işçi</div>
+  // Filial sıralama kartları — tam detallı
+  document.getElementById('fs-rank-cards').innerHTML = byBranch.map((b,i)=>{
+    const diff = b.prevTotal>0 ? b.thisTotal-b.prevTotal : null;
+    const shareP = grandTotal>0?Math.round(b.thisTotal/grandTotal*100):0;
+    const medals = ['🥇','🥈','🥉'];
+    const isTop = i===0 && b.thisTotal>0;
+    return `
+    <div style="display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:12px;
+      margin-bottom:8px;border:1.5px solid ${isTop?b.color+'40':'var(--border)'};
+      background:${isTop?b.color+'08':'var(--surface2)'}">
+      <div style="font-size:${i<3?'24px':'16px'};min-width:32px;text-align:center;font-weight:700;color:${i<3?'inherit':'var(--text3)'}">
+        ${medals[i]||i+1}
       </div>
-      <div style="text-align:center">
-        <div style="font-size:36px;font-weight:900;color:#92400E;line-height:1">${byBranch[0].total}</div>
-        <div style="font-size:11px;color:#B45309;font-weight:600">pasiyent</div>
-        ${byBranch[0].prevTotal>0?`<div style="font-size:10px;color:${byBranch[0].total>=byBranch[0].prevTotal?'var(--green)':'var(--red)'};margin-top:2px">${byBranch[0].total>=byBranch[0].prevTotal?'▲':'▼'} ${Math.abs(byBranch[0].total-byBranch[0].prevTotal)} əvv. aya nisbət</div>`:''}
+      <div style="width:40px;height:40px;border-radius:10px;background:${b.color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="${b.color}" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
       </div>
-    </div>` : ''}
-    <!-- DİGƏR MƏRKƏZLƏR -->
-    ${byBranch.slice(1).map((b,i)=>{
-      const rank = i+2;
-      const bcolor = BRANCH_COLORS[b.branch]||'#1E5FAD';
-      const diff = b.prevTotal>0 ? b.total-b.prevTotal : null;
-      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);margin-bottom:8px">
-        <div class="rkb ${rank===2?'rk2':rank===3?'rk3':'rkn'}" style="width:30px;height:30px;font-size:13px">${rank===2?'🥈':rank===3?'🥉':rank}</div>
-        <div style="width:38px;height:38px;border-radius:10px;background:${bcolor}18;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏢</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:700;color:var(--text)">${b.branch}</div>
-          <div style="font-size:10.5px;color:var(--text3);margin-top:1px">${b.psixCount} psixoloq · ${b.workers.length} işçi</div>
-          <div class="prog-bar" style="margin-top:5px"><div class="prog-fill" style="width:${maxT>0?pct(b.total,maxT):0}%;background:${bcolor}"></div></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:3px">${b.branch}</div>
+        <div style="font-size:11px;color:var(--text3)">${b.psixCount} psixoloq · ${b.workerCount} işçi</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:5px">
+          <div class="prog-bar" style="flex:1;height:7px">
+            <div class="prog-fill" style="height:7px;width:${shareP}%;background:${b.color}"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);min-width:30px">${shareP}%</div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:20px;font-weight:800;color:${bcolor}">${b.total}</div>
-          ${diff!==null?`<div style="font-size:10px;font-weight:600;color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'+':''}${diff}</div>`:'<div style="font-size:10px;color:var(--text3)">—</div>'}
-        </div>
-      </div>`;
-    }).join('')}
-    ${byBranch.every(b=>b.total===0)?'<div style="text-align:center;padding:24px;color:var(--text3);font-size:12px">Bu ay üçün hələ məlumat yoxdur<br><span style="font-size:10px">+ Pasiyent əlavə et düyməsindən başlayın</span></div>':''}`
-  : '<div style="text-align:center;padding:24px;color:var(--text3);font-size:12px">Hələ məlumat yoxdur</div>';
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:26px;font-weight:800;color:${b.color};line-height:1">${b.thisTotal}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">pasiyent</div>
+        ${diff!==null?`<div style="font-size:11px;font-weight:700;color:${diff>=0?'var(--green)':'var(--red)'};">${diff>=0?'▲+':'▼'}${Math.abs(diff)}</div>`:'<div style="font-size:10px;color:var(--text3)">—</div>'}
+      </div>
+    </div>`;
+  }).join('')||'<div style="text-align:center;padding:32px;color:var(--text3)">Bu ay üçün məlumat daxil edilməyib</div>';
 
-  // AYLIQ DİNAMİKA — mərkəz üzrə bütün aylar
-  const allMonths = Array.from({length:12},(_,i)=>{
-    const m = i+1;
+  // İl boyu dinamika chart
+  const allMonths = Array.from({length:12},(_,mi)=>{
+    const m=mi+1;
     return {
-      label: MONTHS_AZ[m].slice(0,3),
-      byBranch: branches.map(branch=>{
-        const bw = S.workers.filter(w=>w.branch===branch);
-        return S.pasientler.filter(p=>p.month===m&&p.year===selYear&&bw.some(w=>w.id===p.wid)).reduce((s,p)=>s+p.count,0);
+      label: MONTHS[m].slice(0,3), m,
+      byB: allBranches.map(branch=>{
+        const bw=S.workers.filter(w=>w.branch===branch);
+        return S.pasientler.filter(p=>p.month===m&&p.year===selYear&&(p.branch===branch||bw.some(w=>w.id===p.wid))).reduce((s,p)=>s+p.count,0);
       }),
       total: S.pasientler.filter(p=>p.month===m&&p.year===selYear).reduce((s,p)=>s+p.count,0)
     };
   });
   const maxBar = Math.max(...allMonths.map(m=>m.total),1);
-  const BCOLS = ['#1B3A6B','#0A7C6E','#E8931A','#7B4FB8','#D94F3D','#06B6D4','#2E8B57'];
-  const barW=40, gap=8, H=110, sX=8;
-  const svgW2 = sX + 12*(barW+gap) + 10;
-  document.getElementById('am-monthly-chart').innerHTML = `
-    <svg width="100%" viewBox="0 0 ${svgW2} ${H+44}" style="overflow:visible">
-      ${allMonths.map((m,i)=>{
-        let yOff = H+4;
-        const x = sX + i*(barW+gap);
-        const isCur = (i+1)===selMonth;
-        const segBars = branches.map((branch,bi)=>{
-          const v = m.byBranch[bi];
-          if(!v) return '';
-          const bh = Math.max(pct(v,maxBar)*H/100,2);
-          yOff -= bh;
-          return `<rect x="${x}" y="${yOff}" width="${barW}" height="${bh}" fill="${BCOLS[bi%4]}" opacity="${isCur?1:0.55}" rx="${bi===branches.length-1?3:0}"/>`;
+  const bW=38,bGap=6,H=110,sX=8,svgW=sX+12*(bW+bGap)+10;
+  document.getElementById('fs-chart').innerHTML=`
+    <svg width="100%" viewBox="0 0 ${svgW} ${H+44}" style="overflow:visible">
+      ${allMonths.map((m,idx)=>{
+        let yOff=H+4; const x=sX+idx*(bW+bGap);
+        const isCur=(idx+1)===selMonth;
+        const segs = allBranches.map((br,bi)=>{
+          const v=m.byB[bi]; if(!v)return '';
+          const bh=Math.max(v/maxBar*H,2); yOff-=bh;
+          return `<rect x="${x}" y="${yOff}" width="${bW}" height="${bh}" fill="${BCOLS[bi]}" opacity="${isCur?1:.55}" rx="${bi===allBranches.length-1?3:0}"/>`;
         }).reverse().join('');
         return `<g>
-          ${isCur?`<rect x="${x-2}" y="0" width="${barW+4}" height="${H+8}" rx="4" fill="#1E5FAD" opacity="0.06"/>`:''}
-          ${segBars}
-          ${m.total>0?`<text x="${x+barW/2}" y="${Math.max(H+4-pct(m.total,maxBar)*H/100-4,6)}" text-anchor="middle" font-size="9" fill="${isCur?'#1B3A6B':'#6B7F9A'}" font-weight="${isCur?700:400}">${m.total}</text>`:''}
-          <text x="${x+barW/2}" y="${H+20}" text-anchor="middle" font-size="9.5" fill="${isCur?'#1B3A6B':'#8096B4'}" font-weight="${isCur?700:400}">${m.label}</text>
+          ${isCur?`<rect x="${x-2}" y="0" width="${bW+4}" height="${H+8}" rx="4" fill="#1E5FAD" opacity=".06"/>`:''}
+          ${segs}
+          ${m.total>0?`<text x="${x+bW/2}" y="${Math.max(H+4-m.total/maxBar*H-5,8)}" text-anchor="middle" font-size="9" font-weight="${isCur?700:400}" fill="${isCur?'#1B3A6B':'#8096B4'}">${m.total}</text>`:''}
+          <text x="${x+bW/2}" y="${H+20}" text-anchor="middle" font-size="9.5" font-weight="${isCur?700:400}" fill="${isCur?'#1B3A6B':'#8096B4'}">${m.label}</text>
         </g>`;
       }).join('')}
     </svg>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
-      ${branches.map((b,i)=>`<span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text2)">
-        <span style="width:10px;height:10px;border-radius:2px;background:${BCOLS[i%4]};display:inline-block"></span>${b}</span>`).join('')}
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+      ${allBranches.map((b,i)=>`<span style="display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:2px;background:${BCOLS[i]};display:inline-block"></span>${b.split('(')[0].trim()}</span>`).join('')}
     </div>`;
 
-  // CƏDVƏL — ay üzrə mərkəz müqayisəsi
-  document.getElementById('am-table').innerHTML = `
-    <thead><tr><th>Mərkəz / Filial</th><th>${MONTHS_AZ[selMonth]} ${selYear}</th><th>Əvv. ay (${MONTHS_AZ[prevMonth]})</th><th>Artım</th><th>Psixoloq</th><th>Status</th></tr></thead>
+  // Müqayisə cədvəli
+  document.getElementById('fs-table').innerHTML=`
+    <thead><tr>
+      <th>#</th><th>Filial</th>
+      <th>${MONTHS[selMonth]}</th>
+      <th>${MONTHS[prevMonth]}</th>
+      <th>Dəyişiklik</th>
+      <th>Pay</th>
+      <th>Status</th>
+    </tr></thead>
     <tbody>${byBranch.map((b,i)=>{
-      const diff = b.prevTotal>0 ? b.total-b.prevTotal : null;
-      const rank = i===0&&b.total>0?'🥇':i===1&&b.total>0?'🥈':i===2&&b.total>0?'🥉':'';
+      const diff=b.prevTotal>0?b.thisTotal-b.prevTotal:null;
+      const shareP=grandTotal>0?Math.round(b.thisTotal/grandTotal*100):0;
       return `<tr>
-        <td class="primary">${rank} ${b.branch}</td>
-        <td style="font-size:16px;font-weight:800;color:${BRANCH_COLORS[b.branch]||'var(--navy)'}">${b.total}</td>
+        <td style="font-weight:700">${['🥇','🥈','🥉'][i]||i+1}</td>
+        <td class="primary"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${b.color};margin-right:6px;vertical-align:middle"></span>${b.branch}</td>
+        <td style="font-size:15px;font-weight:800;color:${b.color}">${b.thisTotal}</td>
         <td style="color:var(--text3)">${b.prevTotal||'—'}</td>
         <td>${diff!==null?`<span style="font-weight:700;color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'▲+':'▼'}${Math.abs(diff)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
-        <td>${b.psixCount} nəfər</td>
-        <td><span class="badge ${b.total>=30?'b-green':b.total>=15?'b-amber':b.total>0?'b-gray':'b-red'}">${b.total>=30?'Yüksək':b.total>=15?'Orta':b.total>0?'Aşağı':'Məlumat yoxdur'}</span></td>
+        <td><div style="display:flex;align-items:center;gap:6px">
+          <div class="prog-bar" style="width:50px"><div class="prog-fill" style="width:${shareP}%;background:${b.color}"></div></div>
+          ${shareP}%
+        </div></td>
+        <td><span class="badge ${b.thisTotal>=40?'b-green':b.thisTotal>=20?'b-amber':b.thisTotal>0?'b-gray':'b-red'}">${b.thisTotal>=40?'Yüksək':b.thisTotal>=20?'Orta':b.thisTotal>0?'Aşağı':'Məlumat yox'}</span></td>
       </tr>`;
     }).join('')}</tbody>`;
 };
+
 
 window.savePasient = function() {
   const branch = document.getElementById('pa-branch').value;
@@ -1910,7 +1998,7 @@ window.savePasient = function() {
   const exist = S.pasientler.find(p=>p.branch===branch&&p.wid===wid&&p.month===month&&p.year===year);
   if(exist){ exist.count=count; exist.note=document.getElementById('pa-note').value; }
   else S.pasientler.push({id:'p'+Date.now(),branch,wid,month,year,count,note:document.getElementById('pa-note').value});
-  saveState(); closeModal('modal-pasient'); renderAyMerkezi();
+  saveState(); closeModal('modal-pasient'); renderFilialStat();
   toast(`${branch} — ${MONTHS_AZ[month]} ${year}: ${count} pasiyent yadda saxlandı ✓`,'success');
 };
 
@@ -2098,6 +2186,7 @@ window.saveKuratorTask = function() {
   });
   saveState(); closeModal('modal-kurator-task'); refreshAll(); renderRehberler();
   const assignee=S.workers.find(x=>x.id===wid);
+  sendTaskNotification(wid, name, leader?.name.split(' ')[0]||'Rəhbər');
   toast(`${leader?.name.split(' ')[0]||'?'} → ${assignee?.name.split(' ')[0]||'?'} tapşırıq verildi ✓`,'success');
 };
 
@@ -2525,6 +2614,220 @@ document.querySelectorAll('.nav-item').forEach(item=>{
   });
 });
 
+// ── MÜRACİƏTLƏR ─────────────────────────────────────────────────────────────
+async function renderMuraciatler() {
+  try {
+    const snap = await get(ref(db,'isci_muraciatleri'));
+    const data = snap.val() || {};
+    const all  = Object.values(data).sort((a,b)=>b.ts-a.ts);
+
+    const pending  = all.filter(m=>m.status==='pending');
+    const approved = all.filter(m=>m.status==='approved');
+    const rejected = all.filter(m=>m.status==='rejected');
+
+    // Badge yenilə
+    document.getElementById('mur-badge').textContent=pending.length;
+    document.getElementById('mur-pending-badge').textContent=pending.length+' müraciət';
+
+    // Metrics
+    document.getElementById('mur-metrics').innerHTML=`
+      <div class="mc"><div class="mc-accent" style="background:#E8931A"></div><div class="mc-icon">⏳</div>
+        <div class="mc-label">Gözləyən</div><div class="mc-val">${pending.length}</div><div class="mc-sub">Təsdiq gözləyir</div></div>
+      <div class="mc"><div class="mc-accent" style="background:#2E8B57"></div><div class="mc-icon">✅</div>
+        <div class="mc-label">Təsdiqlənmiş</div><div class="mc-val">${approved.length}</div><div class="mc-sub">Aktiv işçi</div></div>
+      <div class="mc"><div class="mc-accent" style="background:#D94F3D"></div><div class="mc-icon">❌</div>
+        <div class="mc-label">Rədd edilmiş</div><div class="mc-val">${rejected.length}</div><div class="mc-sub">Qəbul edilmədi</div></div>
+      <div class="mc"><div class="mc-accent" style="background:#1E5FAD"></div><div class="mc-icon">📋</div>
+        <div class="mc-label">Ümumi</div><div class="mc-val">${all.length}</div><div class="mc-sub">Bütün müraciətlər</div></div>`;
+
+    // Gözləyən müraciətlər
+    document.getElementById('mur-pending-list').innerHTML = pending.length ? pending.map(m=>`
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px">
+          <div style="width:42px;height:42px;border-radius:50%;background:var(--accentbg,#1E5FAD18);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">
+            ${(m.ad[0]||'')+(m.soyad[0]||'')}
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${m.ad} ${m.soyad} ${m.ata?'('+m.ata+')':''}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.vezife} · ${m.filial}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px">@${m.username} · ${m.tel||'—'}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:1px">Müraciət tarixi: ${m.date}</div>
+          </div>
+          <span class="badge b-amber">⏳ Gözləyir</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="approveWorker('${m.id}')"
+            style="flex:1;padding:9px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+            ✓ Təsdiqlə
+          </button>
+          <button onclick="rejectWorker('${m.id}')"
+            style="flex:1;padding:9px;background:#FEF2F2;color:var(--red);border:1px solid #FCA5A5;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+            ✕ Rədd et
+          </button>
+        </div>
+      </div>`).join('')
+      : '<div style="text-align:center;padding:28px;color:var(--text3);font-size:12px">Gözləyən müraciət yoxdur ✅</div>';
+
+    // Təsdiqlənmişlər
+    document.getElementById('mur-approved-list').innerHTML = approved.length ? approved.map(m=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+        <div style="width:32px;height:32px;border-radius:50%;background:#ECFDF5;color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">
+          ${(m.ad[0]||'')+(m.soyad[0]||'')}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12.5px;font-weight:600;color:var(--text)">${m.ad} ${m.soyad}</div>
+          <div style="font-size:10.5px;color:var(--text3)">@${m.username} · ${m.vezife}</div>
+        </div>
+        <span class="badge b-green">✓ Aktiv</span>
+      </div>`).join('')
+      : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Hələ təsdiqlənmiş yoxdur</div>';
+
+    // Cədvəl
+    document.getElementById('mur-table').innerHTML = all.map(m=>`<tr>
+      <td class="primary">${m.ad} ${m.soyad}</td>
+      <td>${m.vezife}</td>
+      <td>${m.filial}</td>
+      <td style="font-family:monospace;font-size:12px">@${m.username}</td>
+      <td>${m.date}</td>
+      <td><span class="badge ${m.status==='approved'?'b-green':m.status==='rejected'?'b-red':'b-amber'}">
+        ${m.status==='approved'?'✓ Təsdiqləndi':m.status==='rejected'?'✕ Rədd edildi':'⏳ Gözləyir'}
+      </span></td>
+      <td style="display:flex;gap:6px">
+        ${m.status==='pending'?`
+          <button onclick="approveWorker('${m.id}')" class="btn btn-green btn-sm">Təsdiqlə</button>
+          <button onclick="rejectWorker('${m.id}')" class="btn btn-danger btn-sm">Rədd et</button>
+        `:m.status==='approved'?`<button onclick="rejectWorker('${m.id}')" class="btn btn-ghost btn-sm">Blokla</button>`
+        :`<button onclick="approveWorker('${m.id}')" class="btn btn-ghost btn-sm">Bərpa et</button>`}
+      </td>
+    </tr>`).join('');
+
+  } catch(e) {
+    document.getElementById('mur-pending-list').innerHTML='<div style="color:var(--red);padding:14px">Firebase bağlantı xətası: '+e.message+'</div>';
+  }
+}
+
+window.approveWorker = async function(id) {
+  try {
+    const snap = await get(ref(db,'isci_muraciatleri/'+id));
+    const m = snap.val();
+    if(!m) return;
+
+    // İşçini workers siyahısına əlavə et
+    const COLORS=['#1E5FAD','#0A7C6E','#7B4FB8','#E8931A','#D94F3D','#06B6D4','#2E8B57'];
+    const newWorker = {
+      id: 'w_'+id,
+      name: m.ad+' '+m.soyad,
+      role: m.vezife,
+      dept: m.vezife,
+      branch: m.filial,
+      color: COLORS[Math.floor(Math.random()*COLORS.length)],
+      username: m.username,
+      email: m.username+'@ppc.az',
+      tel: m.tel||'',
+      isNew: true
+    };
+
+    // ppcdata/workers-ə əlavə et
+    const wSnap = await get(ref(db,'ppcdata/workers'));
+    const workers = wSnap.val() || [];
+    const arr = Array.isArray(workers) ? workers : Object.values(workers);
+    // Artıq varsa əlavə etmə
+    if(!arr.find(w=>w.username===m.username)) arr.push(newWorker);
+    await set(ref(db,'ppcdata/workers'), arr);
+
+    // Müraciəti təsdiqlənmiş kimi işarələ + workerId saxla
+    await update(ref(db,'isci_muraciatleri/'+id), {status:'approved', workerId:newWorker.id, approvedAt:Date.now()});
+
+    toast(m.ad+' '+m.soyad+' təsdiqləndi ✓ İndi sistemə daxil ola bilər','success');
+    renderMuraciatler();
+  } catch(e) { toast('Xəta: '+e.message,'error'); }
+};
+
+window.rejectWorker = async function(id) {
+  try {
+    await update(ref(db,'isci_muraciatleri/'+id), {status:'rejected', rejectedAt:Date.now()});
+    const snap = await get(ref(db,'isci_muraciatleri/'+id));
+    const m = snap.val();
+    toast((m?.ad||'İşçi')+' müraciəti rədd edildi');
+    renderMuraciatler();
+  } catch(e) { toast('Xəta: '+e.message,'error'); }
+};
+
+// ── SİDEBAR SÜRÜŞDÜRMƏ ──────────────────────────────────────────────────────
+(function initSidebarDrag(){
+  const nav = document.querySelector('.nav');
+  if(!nav) return;
+  let dragged = null, dragIdx = -1;
+
+  function getGroups(){ return [...nav.querySelectorAll('.nav-group')]; }
+
+  function saveSidebarOrder(){
+    try{
+      const order = getGroups().map(g=>g.querySelector('.nav-group-label')?.textContent?.trim().replace('⠿','').trim());
+      localStorage.setItem('ppc_nav_order', JSON.stringify(order));
+    }catch(e){}
+  }
+
+  function restoreSidebarOrder(){
+    try{
+      const saved = JSON.parse(localStorage.getItem('ppc_nav_order')||'null');
+      if(!saved?.length) return;
+      const groups = getGroups();
+      saved.forEach(label=>{
+        const g = groups.find(x=>x.querySelector('.nav-group-label')?.textContent?.trim().replace('⠿','').trim()===label);
+        if(g) nav.appendChild(g);
+      });
+    }catch(e){}
+  }
+
+  nav.addEventListener('dragstart', e=>{
+    const group = e.target.closest('.nav-group');
+    if(!group) return;
+    dragged = group;
+    group.classList.add('dragging');
+    e.dataTransfer.effectAllowed='move';
+  });
+
+  nav.addEventListener('dragend', e=>{
+    const group = e.target.closest('.nav-group');
+    if(group) group.classList.remove('dragging');
+    getGroups().forEach(g=>g.classList.remove('drag-over'));
+    dragged = null;
+    saveSidebarOrder();
+  });
+
+  nav.addEventListener('dragover', e=>{
+    e.preventDefault();
+    const group = e.target.closest('.nav-group');
+    if(!group||group===dragged) return;
+    getGroups().forEach(g=>g.classList.remove('drag-over'));
+    group.classList.add('drag-over');
+    // Yerini müəyyən et
+    const rect = group.getBoundingClientRect();
+    const mid  = rect.top + rect.height/2;
+    if(e.clientY < mid) nav.insertBefore(dragged, group);
+    else                nav.insertBefore(dragged, group.nextSibling);
+  });
+
+  nav.addEventListener('dragleave', e=>{
+    const group = e.target.closest('.nav-group');
+    if(group) group.classList.remove('drag-over');
+  });
+
+  nav.addEventListener('drop', e=>{
+    e.preventDefault();
+    getGroups().forEach(g=>g.classList.remove('drag-over'));
+  });
+
+  // Nav group-larını drag-able et
+  setTimeout(()=>{
+    getGroups().forEach(g=>{
+      g.setAttribute('draggable','true');
+    });
+    restoreSidebarOrder();
+  }, 200);
+})();
+
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast = function(msg, type='') {
   const t=document.getElementById('toast');
@@ -2533,11 +2836,224 @@ window.toast = function(msg, type='') {
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
+
+// ── PWA + BİLDİRİŞ SİSTEMİ ────────────────────────────────────────────────────
+const FCM_VAPID_KEY = 'BDUwz3e8ZBePatW2Kr6PdXQZUCpCdnO3kP4ivAT3jGwNjiJP245tdBykkRUbQH6_2NfoQs2ZTDw2cCzF7Fs_95I';
+
+let fcmToken = null;
+
+async function initPWA() {
+  // 1. Service Worker qeydiyyat
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+      console.log('[PWA] SW registered:', reg.scope);
+    } catch(e) {
+      console.log('[PWA] SW error:', e.message);
+    }
+  }
+
+  // 2. Bildiriş icazəsi
+  if ('Notification' in window && Notification.permission === 'default') {
+    // 3 saniyə sonra sor (giriş etdikdən sonra)
+    setTimeout(requestNotifPermission, 3000);
+  } else if (Notification.permission === 'granted') {
+    await registerFCMToken();
+  }
+
+  // 3. iOS "Ana ekrana əlavə et" tövsiyəsi
+  if (isIOS() && !isInStandaloneMode()) {
+    showInstallBanner();
+  }
+}
+
+async function requestNotifPermission() {
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      await registerFCMToken();
+      showNotifToast('Bildirişlər aktiv edildi ✓');
+    }
+  } catch(e) {}
+}
+
+async function registerFCMToken() {
+  try {
+    const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
+    const messaging = getMessaging();
+    fcmToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+    if (fcmToken) {
+      // Token-i Firebase-ə saxla (işçi ID ilə)
+      const uid = (typeof ME !== 'undefined' && ME?.id) || 
+                  (typeof currentUser !== 'undefined' && currentUser?.uid) || 
+                  'admin';
+      await set(ref(db, 'fcm_tokens/' + uid), {
+        token: fcmToken,
+        platform: getMobilePlatform(),
+        updatedAt: Date.now()
+      });
+      console.log('[FCM] Token saved for:', uid);
+    }
+    // Ön planda gələn bildirişlər
+    onMessage(messaging, payload => {
+      const { title, body } = payload.notification || {};
+      showNotifToast((title||'PPC') + ': ' + (body||'Yeni bildiriş'));
+    });
+  } catch(e) {
+    console.log('[FCM] Token error:', e.message);
+  }
+}
+
+// Tapşırıq bildirişi göndər (admin tərəfindən)
+async function sendTaskNotification(workerId, taskName, assignerName) {
+  try {
+    const snap = await get(ref(db, 'fcm_tokens/' + workerId));
+    const tokenData = snap.val();
+    if (!tokenData?.token) return;
+
+    // Firebase-ə bildiriş yazırıq — Cloud Function və ya FCM HTTP API lazımdır
+    // Hazırda in-app real-time notification ilə işləyir
+    await set(ref(db, 'notifications/' + workerId + '/' + Date.now()), {
+      title: '📋 Yeni Tapşırıq',
+      body: assignerName + ' sizə tapşırıq verdi: ' + taskName,
+      type: 'task',
+      read: false,
+      ts: Date.now()
+    });
+  } catch(e) {}
+}
+
+// Real-time bildiriş listener (işçi portalı üçün)
+function listenNotifications(workerId) {
+  if (!workerId || !db) return;
+  onValue(ref(db, 'notifications/' + workerId), snap => {
+    const data = snap.val() || {};
+    const unread = Object.values(data).filter(n => !n.read);
+    updateNotifBadge(unread.length);
+    if (unread.length > 0) {
+      const latest = unread.sort((a,b) => b.ts-a.ts)[0];
+      // Brauzer bildirişi
+      if (Notification.permission === 'granted' && document.hidden) {
+        new Notification(latest.title, {
+          body: latest.body,
+          icon: 'ppc-icon-192.png',
+          badge: 'ppc-badge-72.png',
+          vibrate: [200,100,200]
+        });
+      }
+    }
+  });
+}
+
+function updateNotifBadge(count) {
+  const badge = document.getElementById('notif-badge');
+  if (badge) {
+    badge.textContent = count > 0 ? count : '';
+    badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+}
+
+function showNotifToast(msg) {
+  if (typeof toast === 'function') toast(msg, 'success');
+}
+
+// Platform helpers
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function isInStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || 
+         window.navigator.standalone === true;
+}
+function getMobilePlatform() {
+  if (/android/i.test(navigator.userAgent)) return 'android';
+  if (isIOS()) return 'ios';
+  return 'web';
+}
+
+// iOS "Ana ekrana əlavə et" banneri
+function showInstallBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.style.cssText = `
+    position:fixed;bottom:0;left:0;right:0;z-index:9999;
+    background:#1B3A6B;color:#fff;padding:14px 16px;
+    display:flex;align-items:center;gap:12px;
+    box-shadow:0 -2px 20px rgba(0,0,0,.3);
+  `;
+  banner.innerHTML = `
+    <img src="ppc-icon-192.png" style="width:42px;height:42px;border-radius:10px;flex-shrink:0">
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700">PPC Sistemə ana ekrana əlavə et</div>
+      <div style="font-size:11px;opacity:.7;margin-top:2px">
+        Safari-də <strong>Paylaş</strong> → <strong>Ana ekrana əlavə et</strong>
+      </div>
+    </div>
+    <button onclick="document.getElementById('install-banner').remove()" 
+      style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit">
+      Bağla
+    </button>
+  `;
+  document.body.appendChild(banner);
+}
+
+// Android "Yüklə" prompt
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showAndroidInstallBtn();
+});
+
+function showAndroidInstallBtn() {
+  const btn = document.getElementById('install-app-btn');
+  if (btn) btn.style.display = 'flex';
+}
+
+window.installApp = async function() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') {
+    if (typeof toast === 'function') toast('Tətbiq yüklənir... ✓', 'success');
+  }
+  deferredPrompt = null;
+  const btn = document.getElementById('install-app-btn');
+  if (btn) btn.style.display = 'none';
+};
+
+// Topbar-a bildiriş ikonu + yüklə düyməsi əlavə et
+function addTopbarActions() {
+  const tbRight = document.getElementById('tb-actions') || document.getElementById('tb-right');
+  if (!tbRight) return;
+
+  tbRight.innerHTML = `
+    <button id="install-app-btn" onclick="installApp()" title="Tətbiqi yüklə"
+      style="display:none;align-items:center;gap:6px;padding:7px 12px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M12 16l-4-4h3V4h2v8h3l-4 4z"/><path d="M20 18H4v2h16v-2z"/>
+      </svg>
+      Telefona yüklə
+    </button>
+    <button id="notif-btn" onclick="requestNotifPermission()" title="Bildirişlər"
+      style="position:relative;width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">
+      🔔
+      <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center"></span>
+    </button>
+  ` + tbRight.innerHTML;
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    addTopbarActions();
+    initPWA();
+  }, 500);
+});
+
 // ── ADMIN GİRİŞ SİSTEMİ ─────────────────────────────────────────────────────
 const ADMIN_USERS = [
-  {email:'admin@ppc.az',    pass:'Admin2024',  name:'Baş Admin',      role:'Super Admin'},
-  {email:'rehber@ppc.az',   pass:'Rehber2024', name:'Rəhbərlik',      role:'Rəhbər'},
-  {email:'kamran@ppc.az',   pass:'Kamran2024', name:'Kamran',         role:'Sistem Admini'},
+  {email:'kamran@ppc.az', pass:'Kamran@PPC2024!', name:'Kamran', role:'Sistem Admini · PPC'},
 ];
 
 function showLogin() {
