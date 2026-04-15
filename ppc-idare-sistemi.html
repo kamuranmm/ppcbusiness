@@ -3086,6 +3086,15 @@ function showLogin() {
   document.getElementById('app-wrap').style.display='none';
 }
 function showApp(user) {
+  // Session saxla — 3 yerdə
+  const sessData = {email:user.email||user.name, name:user.name, role:user.role, ts:Date.now()};
+  try{ localStorage.setItem('ppc_admin_session', JSON.stringify(sessData)); }catch(e){}
+  try{
+    const exp=new Date(); exp.setFullYear(exp.getFullYear()+1);
+    document.cookie='ppc_admin_sid='+encodeURIComponent(JSON.stringify(sessData))+'; expires='+exp.toUTCString()+'; path=/; SameSite=Lax';
+  }catch(e){}
+  try{ if(db) set(ref(db,'sessions/admin/kamran'), {name:user.name, ts:Date.now(), active:true}).catch(()=>{}); }catch(e){}
+
   document.getElementById('admin-login').style.display='none';
   document.getElementById('app-wrap').style.display='flex';
   document.getElementById('sf-av').textContent = user.name.slice(0,2).toUpperCase();
@@ -3129,6 +3138,8 @@ window.doAdminLogin = async function() {
 window.doAdminLogout = async function() {
   try{ if(auth) await signOut(auth); }catch(e){}
   try{ localStorage.removeItem('ppc_admin_session'); }catch(e){}
+  try{ document.cookie='ppc_admin_sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; }catch(e){}
+  try{ if(db) set(ref(db,'sessions/admin/kamran'),{active:false,ts:Date.now()}).catch(()=>{}); }catch(e){}
   showLogin();
   document.getElementById('al-email').value='';
   document.getElementById('al-pass').value='';
@@ -3136,26 +3147,37 @@ window.doAdminLogout = async function() {
   document.getElementById('al-btn').textContent='Daxil ol';
 };
 
-// Session yoxla
-(function checkSession(){
-  try{
-    const s=JSON.parse(localStorage.getItem('ppc_admin_session')||'null');
-    if(s && s.email) { // Çıxış edilməyincə sessiya davam edir
-      showApp(s); return;
-    }
-  }catch(e){}
+// Session yoxla — localStorage + cookie + Firebase üçlü
+(async function checkSession(){
+  // 1. localStorage
+  let sess = null;
+  try{ sess = JSON.parse(localStorage.getItem('ppc_admin_session')||'null'); }catch(e){}
 
-  // Firebase Auth session
-  if(auth) {
+  // 2. Cookie
+  if(!sess?.email && !sess?.name){
+    try{
+      const m = document.cookie.split(';').find(c=>c.trim().startsWith('ppc_admin_sid='));
+      if(m) sess = JSON.parse(decodeURIComponent(m.split('=')[1]));
+    }catch(e){}
+  }
+
+  if(sess?.name){
+    showApp(sess);
+    return;
+  }
+
+  // 3. Firebase Auth
+  if(auth){
     onAuthStateChanged(auth, user=>{
       if(user){
-        const localUser=ADMIN_USERS.find(u=>u.email===user.email)||{name:user.email.split('@')[0],role:'Admin'};
-        showApp(localUser);
+        const u=ADMIN_USERS.find(x=>x.email===user.email)||{email:user.email,name:user.email.split('@')[0],role:'Admin'};
+        showApp(u);
       } else { showLogin(); }
     });
-  } else { showLogin(); }
+  } else {
+    showLogin();
+  }
 })();
 </script>
 </body>
 </html>
-
