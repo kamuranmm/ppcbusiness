@@ -790,8 +790,18 @@ async function loadAndLogin(email) {
 }
 
 function enterApp() {
-  // Session saxla
-  try{ localStorage.setItem('ppc_isci_session', JSON.stringify({workerId:ME.id, username:ME.username||ME.email, ts:Date.now()})); }catch(e){}
+  // Session həm localStorage-ə, həm cookie-yə, həm Firebase-ə saxla
+  const sessData = {workerId:ME.id, username:ME.username||ME.email||'', ts:Date.now()};
+  try{ localStorage.setItem('ppc_isci_session', JSON.stringify(sessData)); }catch(e){}
+  // Cookie — PWA üçün daha etibarlı
+  try{
+    const exp = new Date(); exp.setFullYear(exp.getFullYear()+1);
+    document.cookie = 'ppc_sid='+encodeURIComponent(JSON.stringify(sessData))+'; expires='+exp.toUTCString()+'; path=/; SameSite=Lax';
+  }catch(e){}
+  // Firebase-ə də yaz (bütün cihazlarda qalsın)
+  try{
+    if(db && ME.id) set(ref(db,'sessions/isci/'+ME.id), {workerId:ME.id, name:ME.name, ts:Date.now(), active:true}).catch(()=>{});
+  }catch(e){}
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -805,6 +815,10 @@ function enterApp() {
 
 window.doLogout = async function() {
   try { await signOut(auth); } catch(e){}
+  // Bütün session məlumatlarını sil
+  try{ localStorage.removeItem('ppc_isci_session'); }catch(e){}
+  try{ document.cookie='ppc_sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; }catch(e){}
+  try{ if(db && ME?.id) set(ref(db,'sessions/isci/'+ME.id), {active:false, ts:Date.now()}).catch(()=>{}); }catch(e){}
   ME=null; S={workers:[],tasks:[],hedefler:[],rehberler:[]};
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app-screen').style.display='none';
@@ -815,24 +829,63 @@ window.doLogout = async function() {
 };
 
 // ── SESSION CHECK ─────────────────────────────────────────────────────────────
-// localStorage-dən session yoxla
-(function checkSession(){
+(async function checkSession(){
+  // 1. localStorage yoxla
+  let sessData = null;
+  try{ sessData = JSON.parse(localStorage.getItem('ppc_isci_session')||'null'); }catch(e){}
+
+  // 2. Cookie yoxla (localStorage boşdursa)
+  if(!sessData?.workerId){
+    try{
+      const match = document.cookie.split(';').find(c=>c.trim().startsWith('ppc_sid='));
+      if(match) sessData = JSON.parse(decodeURIComponent(match.split('=')[1]));
+    }catch(e){}
+  }
+
+  // 3. Firebase session yoxla
+  if(!sessData?.workerId){
+    // localStorage-siz Firebase-dən işçi axtarma cəhdi etmə — user ID yoxdur
+    return;
+  }
+
+  // Session var — Firebase-dən aktiv olub-olmadığını yoxla
   try{
-    const s=JSON.parse(localStorage.getItem('ppc_isci_session')||'null');
-    if(s && s.workerId){ // Çıxış edilməyincə sessiya davam edir
-      get(ref(db,'ppcdata')).then(snap=>{
-        const d=snap.val()||{};
-        if(d.workers?.length) S.workers=d.workers;
-        if(d.tasks?.length)   S.tasks=d.tasks;
-        if(d.hedefler?.length)S.hedefler=d.hedefler;
-        if(d.rehberler?.length)S.rehberler=d.rehberler;
-        if(!S.workers.length) S.workers=DEMO_WORKERS;
-        const w=S.workers.find(x=>x.id===s.workerId)||DEMO_WORKERS.find(x=>x.id===s.workerId);
-        if(w){ ME=w; startListener(); enterApp(); }
-      }).catch(()=>{});
+    const sessSnap = await get(ref(db,'sessions/isci/'+sessData.workerId));
+    const sessVal = sessSnap.val();
+    if(sessVal && sessVal.active===false){
+      // Admin tərəfindən çıxarılıb
+      localStorage.removeItem('ppc_isci_session');
+      document.cookie='ppc_sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       return;
     }
   }catch(e){}
+
+  // Məlumatları yüklə
+  try{
+    const snap = await get(ref(db,'ppcdata'));
+    const d = snap.val()||{};
+    if(d.workers?.length) S.workers=d.workers;
+    if(d.tasks?.length)   S.tasks=d.tasks;
+    if(d.hedefler?.length)S.hedefler=d.hedefler;
+    if(d.rehberler?.length)S.rehberler=d.rehberler;
+  }catch(e){}
+
+  if(!S.workers.length) S.workers=DEMO_WORKERS;
+
+  const w = S.workers.find(x=>x.id===sessData.workerId)
+          || DEMO_WORKERS.find(x=>x.id===sessData.workerId);
+
+  if(w){
+    ME=w;
+    // Session-u yenilə
+    try{
+      const exp=new Date(); exp.setFullYear(exp.getFullYear()+1);
+      document.cookie='ppc_sid='+encodeURIComponent(JSON.stringify({...sessData,ts:Date.now()}))+'; expires='+exp.toUTCString()+'; path=/; SameSite=Lax';
+      localStorage.setItem('ppc_isci_session', JSON.stringify({...sessData,ts:Date.now()}));
+    }catch(e){}
+    startListener();
+    enterApp();
+  }
 })();
 
 // ── SIDEBAR UPDATE ────────────────────────────────────────────────────────────
