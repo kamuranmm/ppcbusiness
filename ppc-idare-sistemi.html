@@ -408,7 +408,10 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="sf-av" id="sf-av">RH</div>
       <div><div class="sf-name">Rəhbərlik</div><div class="sf-role" id="sf-role-el">Admin · Azadlıq (Baş Ofis)</div></div>
     </div>
-    <button onclick="doAdminLogout()" style="width:100%;padding:7px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.35);font-size:11.5px;cursor:pointer;font-family:inherit;transition:.15s;margin-top:8px" onmouseover="this.style.borderColor='rgba(217,79,61,.5)';this.style.color='#F87171'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.35)'">
+    <button onclick="openModal('modal-settings')" style="width:100%;padding:7px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.35);font-size:11.5px;cursor:pointer;font-family:inherit;margin-bottom:6px;transition:.15s" onmouseover="this.style.borderColor='rgba(255,255,255,.25)';this.style.color='rgba(255,255,255,.6)'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.35)'">
+      ⚙️ Sistem Tənzimləmələri
+    </button>
+    <button onclick="doAdminLogout()" style="width:100%;padding:7px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.35);font-size:11.5px;cursor:pointer;font-family:inherit;transition:.15s" onmouseover="this.style.borderColor='rgba(217,79,61,.5)';this.style.color='#F87171'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.35)'">
       ← Çıxış
     </button>
   </div>
@@ -1075,6 +1078,52 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-yenigelen')">Ləğv et</button>
       <button class="btn btn-primary" onclick="saveYeniGelen()">Qeydiyyat</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: SİSTEM TƏNZİMLƏMƏLƏRİ ══ -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-title">⚙️ Sistem Tənzimləmələri <button class="modal-close" onclick="closeModal('modal-settings')">×</button></div>
+
+    <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:#92400E">
+      🔒 Bu məlumatlar yalnız brauzerinizdə saxlanır — serverə göndərilmir
+    </div>
+
+    <div class="fg">
+      <label class="fl">GitHub Personal Access Token</label>
+      <div style="display:flex;gap:8px">
+        <input class="fi" id="settings-gh-token" type="password"
+          placeholder="ghp_xxxxxxxxxxxx"
+          style="flex:1"
+          value="">
+        <button onclick="toggleTokenView()" class="btn btn-ghost btn-sm" id="token-eye-btn">👁</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">
+        Tapşırıq verdikdə işçilərə push bildiriş göndərmək üçün lazımdır.<br>
+        GitHub → Settings → Developer settings → Personal access tokens → scope: <strong>workflow</strong>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="fl">Bildiriş Sistemi Status</label>
+      <div id="notif-status" style="padding:8px 12px;border-radius:8px;font-size:12px;background:var(--surface2);border:1px solid var(--border)">
+        Yoxlanır...
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="fl">Test Bildirişi Göndər</label>
+      <div style="display:flex;gap:8px">
+        <select class="fs" id="settings-test-worker" style="flex:1"></select>
+        <button class="btn btn-blue btn-sm" onclick="sendTestNotification()">📤 Test et</button>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-settings')">Bağla</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Saxla</button>
     </div>
   </div>
 </div>
@@ -2851,7 +2900,10 @@ window.togglePassView = function(elId, pass) {
 // ── İŞÇİ BİLDİRİŞİ — GitHub Actions + Firebase ─────────────────────────────
 const GITHUB_OWNER = 'kamuranmm';
 const GITHUB_REPO  = 'ppcbusiness';
-const GITHUB_TOKEN = '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';
+// GitHub Token — admin panel Settings-dən daxil edilir (fayla yazılmır)
+const GITHUB_TOKEN = (()=>{
+  try{ return localStorage.getItem('ppc_gh_token')||''; }catch(e){ return ''; }
+})();
 
 async function sendTaskNotification(workerId, taskName, assignerName) {
   if(!workerId) return;
@@ -2868,59 +2920,116 @@ async function sendTaskNotification(workerId, taskName, assignerName) {
   } catch(e) {}
 
   // 2. GitHub Actions vasitəsilə push bildirişi göndər
-  if(!GITHUB_TOKEN) return; // Token yoxdursa keç
-  try {
-    await fetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + GITHUB_TOKEN,
-          'Accept':        'application/vnd.github+json',
-          'Content-Type':  'application/json',
-          'X-GitHub-Api-Version': '2022-11-28'
-        },
-        body: JSON.stringify({
-          event_type: 'send-notification',
-          client_payload: {
-            workerId,
-            title: '📋 Yeni Tapşırıq',
-            body:  (assignerName||'Admin') + ' sizə tapşırıq verdi: ' + taskName
-          }
-        })
-      }
-    );
-    console.log('[Bildiriş] GitHub Actions tetikləndi →', workerId);
-  } catch(e) {
-    console.log('[Bildiriş] Xəta:', e.message);
-  }
+  const ghTok = getGHToken();
+  if(!ghTok) return;
+  const ok = await triggerGitHubAction(
+    ghTok, workerId,
+    '📋 Yeni Tapşırıq',
+    (assignerName||'Admin') + ' sizə tapşırıq verdi: ' + taskName
+  );
+  console.log('[Bildiriş]', ok ? 'Göndərildi ✓' : 'Xəta', workerId);
 }
 
 // Tapşırıq tamamlananda adminə bildiriş
 async function sendCompletionNotification(taskName, workerName) {
-  if(!GITHUB_TOKEN) return;
+  const ghTok = getGHToken();
+  if(!ghTok) return;
+  await triggerGitHubAction(ghTok, 'admin', '✅ Tapşırıq Tamamlandı', workerName+': "'+taskName+'"');
+}
+
+// ── SİSTEM TƏNZİMLƏMƏLƏRİ ───────────────────────────────────────────────────
+window.openModal = (function(origOpen){
+  return function(id) {
+    origOpen(id);
+    if(id==='modal-settings') loadSettingsModal();
+  };
+})(window.openModal);
+
+function loadSettingsModal() {
+  // Mövcud token-u göstər (gizli)
+  const tok = localStorage.getItem('ppc_gh_token')||'';
+  const el  = document.getElementById('settings-gh-token');
+  if(el) el.value = tok;
+
+  // Status yoxla
+  const statusEl = document.getElementById('notif-status');
+  if(statusEl){
+    if(tok){
+      statusEl.style.background='#ECFDF5';
+      statusEl.style.borderColor='#A7F3D0';
+      statusEl.style.color='var(--green)';
+      statusEl.textContent='✅ Token qurulub — bildiriş sistemi aktiv';
+    } else {
+      statusEl.style.background='#FEF2F2';
+      statusEl.style.borderColor='#FCA5A5';
+      statusEl.style.color='var(--red)';
+      statusEl.textContent='❌ Token yoxdur — bildiriş göndərilmir';
+    }
+  }
+
+  // Test üçün işçi siyahısı
+  const wSel = document.getElementById('settings-test-worker');
+  if(wSel) wSel.innerHTML = S.workers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+}
+
+window.toggleTokenView = function() {
+  const el  = document.getElementById('settings-gh-token');
+  const btn = document.getElementById('token-eye-btn');
+  if(!el) return;
+  if(el.type==='password'){ el.type='text'; if(btn) btn.textContent='🙈'; }
+  else { el.type='password'; if(btn) btn.textContent='👁'; }
+};
+
+window.saveSettings = function() {
+  const tok = document.getElementById('settings-gh-token')?.value?.trim();
+  if(tok){
+    localStorage.setItem('ppc_gh_token', tok);
+    // Cari session-da da yenilə
+    window._ghToken = tok;
+  } else {
+    localStorage.removeItem('ppc_gh_token');
+    window._ghToken = '';
+  }
+  closeModal('modal-settings');
+  toast('Tənzimləmələr saxlandı ✓','success');
+};
+
+window.sendTestNotification = async function() {
+  const wid = document.getElementById('settings-test-worker')?.value;
+  const tok = document.getElementById('settings-gh-token')?.value?.trim()
+            || localStorage.getItem('ppc_gh_token')||'';
+  if(!tok){ toast('Əvvəlcə GitHub Token daxil edin','error'); return; }
+  if(!wid){ toast('İşçi seçin','error'); return; }
+  const w = S.workers.find(x=>x.id===wid);
+  await triggerGitHubAction(tok, wid, '🔔 Test Bildirişi', (w?.name||'İşçi')+', bildiriş sistemi işləyir!');
+  toast('Test bildirişi göndərildi ✓','success');
+};
+
+// GitHub token-u dinamik oxu (localStorage-dən)
+function getGHToken(){
+  return window._ghToken || localStorage.getItem('ppc_gh_token') || GITHUB_TOKEN || '';
+}
+
+async function triggerGitHubAction(token, workerId, title, body) {
   try {
-    await fetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`,
+    const resp = await fetch(
+      'https://api.github.com/repos/kamuranmm/ppcbusiness/dispatches',
       {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + GITHUB_TOKEN,
+          'Authorization': 'Bearer '+token,
           'Accept':        'application/vnd.github+json',
           'Content-Type':  'application/json',
           'X-GitHub-Api-Version': '2022-11-28'
         },
         body: JSON.stringify({
           event_type: 'send-notification',
-          client_payload: {
-            workerId: 'admin',
-            title: '✅ Tapşırıq Tamamlandı',
-            body:  workerName + ': "' + taskName + '"'
-          }
+          client_payload: { workerId, title, body }
         })
       }
     );
-  } catch(e) {}
+    return resp.status===204;
+  } catch(e){ return false; }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
