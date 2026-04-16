@@ -856,6 +856,7 @@ async function loadAndLogin(email) {
 }
 
 function enterApp() {
+  if(!ME) return; // Qoruma
   // Session məlumatları
   const sessData = {workerId:ME.id, name:ME.name, username:ME.username||'', ts:Date.now()};
 
