@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="az">
 <head>
 <meta charset="UTF-8">
@@ -444,7 +444,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, get, update, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD-m3D563Lf4sx3bpe0MxdbiZqHRP_0ATw",
@@ -518,61 +518,49 @@ window.doLogin = async function() {
   const pass     = document.getElementById('li-pass').value;
   const btn      = document.getElementById('li-btn');
   const errEl    = document.getElementById('login-err');
-  if(!username||!pass){
-    errEl.textContent='İstifadəçi adı və şifrəni daxil edin';
-    errEl.style.display='block'; return;
+  if (!username || !pass) {
+    errEl.textContent = 'İstifadəçi adı və şifrəni daxil edin';
+    errEl.style.display = 'block'; return;
   }
-  btn.disabled=true; btn.textContent='Yüklənir...';
-  errEl.style.display='none';
+  btn.disabled = true; btn.textContent = 'Yüklənir...';
+  errEl.style.display = 'none';
 
   try {
-    // Firebase-dən bütün məlumatları yüklə
-    const snap = await get(ref(db,'ppcdata'));
-    const d = snap.val()||{};
-    if(d.workers?.length)  S.workers   = d.workers;
-    if(d.tasks?.length)    S.tasks     = d.tasks;
-    if(d.hedefler?.length) S.hedefler  = d.hedefler;
-    if(d.rehberler?.length)S.rehberler = d.rehberler;
-    if(!S.workers.length)  S.workers   = DEMO_WORKERS;
-
-    // Təsdiqlənmiş müraciətləri yoxla
-    const murSnap = await get(ref(db,'isci_muraciatleri'));
-    const muraciatler = murSnap.val()||{};
-    const approved = Object.values(muraciatler).find(m=>
-      m.status==='approved' &&
-      (m.username||'').toLowerCase()===username &&
-      m.pass===pass
-    );
-
-    // Demo işçilərdə yoxla
-    const demoWorker = S.workers.find(w=>
-      (w.username||w.email?.split('@')[0]||'').toLowerCase()===username
-    );
-
-    if(approved){
-      const w = S.workers.find(x=>x.id===approved.workerId) || {
-        id: approved.workerId||'w_'+approved.id,
-        name: approved.ad+' '+approved.soyad,
-        role: approved.vezife, dept: approved.vezife,
-        branch: approved.filial, color:'#1E5FAD',
-        username: approved.username
-      };
-      ME = w; ME._loginPass = pass;
-      startListener(); enterApp();
-    } else if(demoWorker){
-      const expectedPass = (demoWorker.id?.slice(-4)||'0001')+'2024';
-      if(pass!==expectedPass && pass!=='demo') throw new Error('wrong_pass');
-      ME = demoWorker; ME._loginPass = pass;
-      startListener(); enterApp();
-    } else {
-      throw new Error('not_found');
+    // Firebase Auth email formatı: username@ppc.az
+    const email = username + '@ppc.az';
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged avtomatik işləyəcək — enterApp() orada çağırılır
+  } catch(err) {
+    // Firebase Auth xətası — köhnə sistem ilə yoxla (müraciət siyahısı)
+    try {
+      const murSnap = await get(ref(db, 'isci_muraciatleri'));
+      const muraciatler = murSnap.val() || {};
+      const approved = Object.values(muraciatler).find(m =>
+        m.status === 'approved' &&
+        (m.username||'').toLowerCase() === username &&
+        m.pass === pass
+      );
+      if (approved) {
+        // Firebase Auth-da hesab yoxdur — yarat
+        const email = username + '@ppc.az';
+        try {
+          await createUserWithEmailAndPassword(auth, email, pass);
+          // onAuthStateChanged işləyəcək
+        } catch(createErr) {
+          if (createErr.code === 'auth/email-already-in-use') {
+            await signInWithEmailAndPassword(auth, email, pass);
+          } else throw createErr;
+        }
+      } else {
+        errEl.textContent = 'İstifadəçi adı və ya şifrə yanlışdır. Hələ təsdiqlənməyibsə gözləyin.';
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Daxil ol';
+      }
+    } catch(e2) {
+      errEl.textContent = 'Giriş xətası. İnternet bağlantınızı yoxlayın.';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Daxil ol';
     }
-  } catch(err){
-    errEl.style.display='block';
-    if(err.message==='wrong_pass')     errEl.textContent='Şifrə yanlışdır';
-    else if(err.message==='not_found') errEl.textContent='İstifadəçi tapılmadı və ya hələ təsdiqlənməyib';
-    else                               errEl.textContent='Xəta: '+err.message;
-    btn.disabled=false; btn.textContent='Daxil ol';
   }
 };
 
@@ -774,104 +762,89 @@ function listenNotifications(wid) {
   });
 }
 
-// ── SESSION SİSTEMİ — Firebase əsaslı ───────────────────────────────────────
-// Yeganə etibarlı həll: username+pass Firebase-də saxla, hər açanda yoxla
+// ── SESSION — Firebase Authentication ───────────────────────────────────────
+// Firebase Auth token-i özü saxlayır — refresh, PWA, hər şeydə qalır
 
-async function saveSession(workerId, username, pass) {
-  // Firebase-ə yaz — bütün cihazlarda işləyir
-  if(db) {
-    try {
-      await set(ref(db, 'active_sessions/' + workerId), {
-        workerId, username, pass,
-        ts: Date.now(),
-        active: true
-      });
-    } catch(e){ console.log('Session save error:', e.message); }
+// Firebase Auth vəziyyəti dəyişəndə çağırılır (giriş, çıxış, səhifə yenilənməsi)
+onAuthStateChanged(auth, async (firebaseUser) => {
+  if (!firebaseUser) {
+    // İstifadəçi yoxdur — login ekranını göstər
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display  = 'none';
+    return;
   }
-}
 
-async function loadSession() {
-  // Firebase-dən bütün aktiv sessionları oxu, bu cihaza aid olanı tap
-  // Biz workerId bilmirik, ona görə username ilə giriş edib session yaradırıq
-  // Strategiya: öncə localStorage-dən workerId-ni tap, sonra Firebase-dən yoxla
+  // Firebase istifadəçi var — məlumatları yüklə
   try {
-    const raw = localStorage.getItem('ppc_wid');
-    if(!raw) return null;
-    const wid = raw;
-    const snap = await get(ref(db, 'active_sessions/' + wid));
-    const sess = snap.val();
-    if(sess && sess.active === true) return sess;
-  } catch(e){}
-  return null;
-}
+    const snap = await get(ref(db, 'ppcdata'));
+    const d = snap.val() || {};
+    if (d.workers?.length)  S.workers   = d.workers;
+    if (d.tasks?.length)    S.tasks     = d.tasks;
+    if (d.hedefler?.length) S.hedefler  = d.hedefler;
+    if (d.rehberler?.length)S.rehberler = d.rehberler;
+  } catch(e) {}
 
-async function clearSession(workerId) {
-  try{ localStorage.removeItem('ppc_wid'); }catch(e){}
-  if(db && workerId) {
-    try { await set(ref(db, 'active_sessions/' + workerId), {active: false}); } catch(e){}
+  if (!S.workers.length) S.workers = DEMO_WORKERS;
+
+  // Firebase email-ə görə işçini tap
+  const email = firebaseUser.email;
+  let w = S.workers.find(x => x.email === email);
+
+  // Tapılmadısa Firebase DB-dən username ilə axtar
+  if (!w) {
+    try {
+      const murSnap = await get(ref(db, 'isci_muraciatleri'));
+      const muraciatler = murSnap.val() || {};
+      const approved = Object.values(muraciatler).find(m =>
+        m.status === 'approved' && m.username + '@ppc.az' === email
+      );
+      if (approved) {
+        w = S.workers.find(x => x.id === approved.workerId) || {
+          id:       approved.workerId || 'w_' + approved.id,
+          name:     approved.ad + ' ' + approved.soyad,
+          role:     approved.vezife,
+          dept:     approved.vezife,
+          branch:   approved.filial,
+          color:    '#1E5FAD',
+          username: approved.username,
+          email:    email
+        };
+      }
+    } catch(e) {}
   }
-}
 
-function enterApp() {
-  if(!ME) return;
-  // WorkerId-ni localStorage-ə saxla (yüngül, silinə bilər amma əsas data Firebase-də)
-  try{ localStorage.setItem('ppc_wid', ME.id); }catch(e){}
-  // Firebase-ə session yaz
-  saveSession(ME.id, ME.username||'', ME._loginPass||'');
-
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app-screen').style.display='block';
-  document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const h=new Date().getHours();
-  document.getElementById('tb-greeting').textContent = h<12?'☀️ Sabahınız xeyir':h<18?'🌤 Günortanız xeyir':'🌙 Axşamınız xeyir';
-  updateSidebar();
-  goPage('overview', document.querySelector('.nav-item'));
-  setTimeout(()=>{ addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
-}
-
-window.doLogout = async function() {
-  try{ await signOut(auth); }catch(e){}
-  if(ME?.id) await clearSession(ME.id);
-  ME = null; S = {workers:[],tasks:[],hedefler:[],rehberler:[]};
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('app-screen').style.display='none';
-  document.getElementById('li-username').value='';
-  document.getElementById('li-pass').value='';
-  document.getElementById('li-btn').disabled=false;
-  document.getElementById('li-btn').textContent='Daxil ol';
-};
-
-// ── SESSION CHECK — Səhifə açılanda ──────────────────────────────────────────
-(async function checkSession(){
-  const sess = await loadSession();
-  if(!sess){ document.getElementById('login-screen').style.display='flex'; return; }
-
-  // Session var — məlumatları yüklə
-  try{
-    const snap = await get(ref(db,'ppcdata'));
-    const d = snap.val()||{};
-    if(d.workers?.length)  S.workers  = d.workers;
-    if(d.tasks?.length)    S.tasks    = d.tasks;
-    if(d.hedefler?.length) S.hedefler = d.hedefler;
-    if(d.rehberler?.length)S.rehberler= d.rehberler;
-  }catch(e){}
-
-  if(!S.workers.length) S.workers = DEMO_WORKERS;
-
-  // İşçini tap
-  const w = S.workers.find(x=>x.id===sess.workerId)
-          || DEMO_WORKERS.find(x=>x.id===sess.workerId);
-
-  if(w){
+  if (w) {
     ME = w;
     startListener();
     enterApp();
   } else {
-    // İşçi tapılmadı — session sil
-    await clearSession(sess.workerId);
-    document.getElementById('login-screen').style.display='flex';
+    // Firebase-də hesab var amma işçi tapılmadı
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display  = 'none';
   }
-})();
+});
+
+function enterApp() {
+  if (!ME) return;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display  = 'block';
+  document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const h = new Date().getHours();
+  document.getElementById('tb-greeting').textContent = h < 12 ? '☀️ Sabahınız xeyir' : h < 18 ? '🌤 Günortanız xeyir' : '🌙 Axşamınız xeyir';
+  updateSidebar();
+  goPage('overview', document.querySelector('.nav-item'));
+  setTimeout(() => { addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
+}
+
+window.doLogout = async function() {
+  try { await signOut(auth); } catch(e) {}
+  ME = null;
+  S  = { workers:[], tasks:[], hedefler:[], rehberler:[] };
+  document.getElementById('li-username').value = '';
+  document.getElementById('li-pass').value     = '';
+  document.getElementById('li-btn').disabled   = false;
+  document.getElementById('li-btn').textContent = 'Daxil ol';
+};
 
 // ── SIDEBAR UPDATE ────────────────────────────────────────────────────────────
 function updateSidebar() {
