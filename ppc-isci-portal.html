@@ -856,30 +856,23 @@ async function loadAndLogin(email) {
 }
 
 function enterApp() {
-  // Session 4 yerdə saxla — biri silinsə digəri işləyir
+  // Session məlumatları
   const sessData = {workerId:ME.id, name:ME.name, username:ME.username||'', ts:Date.now()};
 
-  // 1. localStorage
+  // HƏR YERDƏ SAXLA — biri silinsə digəri işləyir
   try{ localStorage.setItem('ppc_isci_session', JSON.stringify(sessData)); }catch(e){}
-
-  // 2. sessionStorage (tab bağlanmaz)
   try{ sessionStorage.setItem('ppc_isci_sess', JSON.stringify(sessData)); }catch(e){}
-
-  // 3. Cookie — 1 il müddətinə
   try{
-    const exp = new Date(); exp.setFullYear(exp.getFullYear()+1);
-    document.cookie = 'ppc_sid='+encodeURIComponent(JSON.stringify(sessData))
+    const exp=new Date(); exp.setFullYear(exp.getFullYear()+2);
+    document.cookie='ppc_sid='+encodeURIComponent(JSON.stringify(sessData))
       +'; expires='+exp.toUTCString()+'; path=/; SameSite=Lax';
   }catch(e){}
-
-  // 4. Firebase DB — bütün cihazlarda sinxronlaşsın
-  try{
-    if(db && ME.id) set(ref(db,'sessions/isci/'+ME.id), {
+  // Firebase — ƏN VACİB: active:true mütləq yazılsın
+  if(db && ME.id){
+    set(ref(db,'sessions/isci/'+ME.id), {
       workerId:ME.id, name:ME.name, ts:Date.now(), active:true
-    }).catch(()=>{});
-  }catch(e){}
-
-  // 5. IndexedDB — ən etibarlı (PWA yenilənəndə qalır)
+    }).catch(e=>console.log('Session Firebase xətası:',e));
+  }
   saveToIDB(sessData);
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
@@ -909,46 +902,43 @@ window.doLogout = async function() {
   document.getElementById('li-btn').textContent='Daxil ol';
 };
 
-// ── SESSION CHECK — 5 mənbədən yoxla ────────────────────────────────────────
+// ── SESSION CHECK ─────────────────────────────────────────────────────────────
 (async function checkSession(){
   let sess = null;
 
-  // 1. IndexedDB (ən etibarlı)
-  sess = await loadFromIDB();
-
-  // 2. localStorage
-  if(!sess?.workerId){
-    try{ sess = JSON.parse(localStorage.getItem('ppc_isci_session')||'null'); }catch(e){}
-  }
-
+  // SIRALI YOXLAMA — tapan kimi dayan
+  // 1. localStorage
+  try{ const s=localStorage.getItem('ppc_isci_session'); if(s) sess=JSON.parse(s); }catch(e){}
+  // 2. IndexedDB
+  if(!sess?.workerId) sess = await loadFromIDB();
   // 3. sessionStorage
-  if(!sess?.workerId){
-    try{ sess = JSON.parse(sessionStorage.getItem('ppc_isci_sess')||'null'); }catch(e){}
-  }
-
+  if(!sess?.workerId){ try{ const s=sessionStorage.getItem('ppc_isci_sess'); if(s) sess=JSON.parse(s); }catch(e){} }
   // 4. Cookie
   if(!sess?.workerId){
     try{
-      const m = document.cookie.split(';').find(c=>c.trim().startsWith('ppc_sid='));
-      if(m) sess = JSON.parse(decodeURIComponent(m.split('=').slice(1).join('=')));
+      const m=document.cookie.split(';').find(c=>c.trim().startsWith('ppc_sid='));
+      if(m) sess=JSON.parse(decodeURIComponent(m.split('=').slice(1).join('=')));
     }catch(e){}
   }
+  // 5. Firebase-dən oxu (lokal məlumat yoxdursa)
+  if(!sess?.workerId){
+    // workerId olmadan Firebase-dən axtarmaq olmaz — login göstər
+    return;
+  }
 
-  // Session tapılmadı — login ekranını göstər
-  if(!sess?.workerId) return;
-
-  // 5. Firebase-dən aktiv olub-olmadığını yoxla (admin blokladısa)
+  // Firebase-dən yalnız admin blokladımı yoxla — xəta olsa KEÇ
   try{
     const fbSess = await get(ref(db,'sessions/isci/'+sess.workerId));
-    if(fbSess.val()?.active === false){
-      // Admin çıxardıb — hər yeri təmizlə
+    const fbVal  = fbSess.val();
+    // Yalnız açıqca false yazılıbsa çıxart — undefined/null olsa keç
+    if(fbVal && fbVal.active === false){
       localStorage.removeItem('ppc_isci_session');
       sessionStorage.removeItem('ppc_isci_sess');
       document.cookie='ppc_sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       await clearIDB();
       return;
     }
-  }catch(e){} // Firebase xətası olsa belə davam et
+  }catch(e){ /* Firebase xətası — sessiyanı silmə, davam et */ }
 
   // Məlumatları Firebase-dən yüklə
   try{
@@ -968,15 +958,17 @@ window.doLogout = async function() {
 
   if(w){
     ME = w;
-    // Bütün session yerlərini yenilə
-    const freshSess = {...sess, ts:Date.now()};
+    // Session-u bütün yerlərə yenidən yaz
+    const freshSess = {workerId:w.id, name:w.name, username:w.username||'', ts:Date.now()};
     try{ localStorage.setItem('ppc_isci_session', JSON.stringify(freshSess)); }catch(e){}
-    try{ sessionStorage.setItem('ppc_isci_sess',  JSON.stringify(freshSess)); }catch(e){}
+    try{ sessionStorage.setItem('ppc_isci_sess', JSON.stringify(freshSess)); }catch(e){}
     try{
-      const exp=new Date(); exp.setFullYear(exp.getFullYear()+1);
+      const exp=new Date(); exp.setFullYear(exp.getFullYear()+2);
       document.cookie='ppc_sid='+encodeURIComponent(JSON.stringify(freshSess))+'; expires='+exp.toUTCString()+'; path=/; SameSite=Lax';
     }catch(e){}
     await saveToIDB(freshSess);
+    // Firebase-ə active:true yaz
+    if(db) set(ref(db,'sessions/isci/'+w.id),{workerId:w.id,name:w.name,ts:Date.now(),active:true}).catch(()=>{});
 
     startListener();
     enterApp();
