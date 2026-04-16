@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="az">
 <head>
 <meta charset="UTF-8">
@@ -167,7 +167,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <body>
 
 <!-- ══ LOGIN ══ -->
-<div id="login-screen">
+<div id="login-screen" style="display:none">
   <div class="login-wrap">
     <!-- TAB SWITCH -->
     <div style="display:flex;gap:6px;margin-bottom:16px;background:rgba(255,255,255,.06);border-radius:12px;padding:4px">
@@ -844,7 +844,7 @@ window.doLogout = async function() {
 // ── SESSION CHECK — Səhifə açılanda ──────────────────────────────────────────
 (async function checkSession(){
   const sess = await loadSession();
-  if(!sess) return; // Session yoxdur — login ekranı qalsın
+  if(!sess){ document.getElementById('login-screen').style.display='flex'; return; }
 
   // Session var — məlumatları yüklə
   try{
@@ -869,6 +869,7 @@ window.doLogout = async function() {
   } else {
     // İşçi tapılmadı — session sil
     await clearSession(sess.workerId);
+    document.getElementById('login-screen').style.display='flex';
   }
 })();
 
