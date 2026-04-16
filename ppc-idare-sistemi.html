@@ -1248,11 +1248,18 @@ function seedData() {
 
 // ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
 function saveState() {
+  // Array-ları object-ə çevir (Firebase array-ları dəyişə bilər)
   const data = {
-    workers:S.workers, tasks:S.tasks, funnel:S.funnel,
-    adSources:S.adSources, pasientler:S.pasientler,
-    rehberler:S.rehberler, hedefler:S.hedefler,
-    vakansiyalar:S.vakansiyalar, yeniGelenler:S.yeniGelenler
+    workers:    S.workers,
+    tasks:      S.tasks,
+    funnel:     S.funnel,
+    adSources:  S.adSources,
+    pasientler: S.pasientler,
+    rehberler:  S.rehberler,
+    hedefler:   S.hedefler,
+    vakansiyalar: S.vakansiyalar,
+    yeniGelenler: S.yeniGelenler,
+    _hasData: true  // Firebase-in boş olub olmadığını anlamaq üçün marker
   };
   try{ localStorage.setItem('ppc_v2', JSON.stringify(data)); }catch(e){}
   if(db) set(ref(db,'ppcdata'), data).catch(e=>console.error('Firebase yazma xətası:',e));
@@ -1261,19 +1268,21 @@ function loadState() {
   if(db) {
     onValue(ref(db,'ppcdata'), snap => {
       const d = snap.val();
-      if(d && (d.workers?.length || d.tasks?.length)) {
+      if(d && d._hasData) {
         // Firebase-də real məlumat var — onları istifadə et
-        if(d.workers?.length)    S.workers    = d.workers;
-        if(d.tasks?.length)      S.tasks      = d.tasks;
-        if(d.funnel)             S.funnel     = d.funnel;
-        if(d.adSources)          S.adSources  = d.adSources;
-        if(d.pasientler?.length) S.pasientler = d.pasientler;
-        if(d.rehberler?.length)  S.rehberler  = d.rehberler;
-        if(d.hedefler?.length)   S.hedefler   = d.hedefler;
-        if(d.vakansiyalar?.length) S.vakansiyalar = d.vakansiyalar;
-        if(d.yeniGelenler?.length) S.yeniGelenler = d.yeniGelenler;
+        // Firebase array-ları object-ə çevirə bilər, geri çevir
+        const toArr = v => v ? (Array.isArray(v) ? v : Object.values(v)) : [];
+        S.workers    = toArr(d.workers);
+        S.tasks      = toArr(d.tasks);
+        S.pasientler = toArr(d.pasientler);
+        S.rehberler  = toArr(d.rehberler);
+        S.hedefler   = toArr(d.hedefler);
+        S.vakansiyalar = toArr(d.vakansiyalar);
+        S.yeniGelenler = toArr(d.yeniGelenler);
+        if(d.funnel)    S.funnel    = d.funnel;
+        if(d.adSources) S.adSources = d.adSources;
       } else {
-        // Firebase boşdur — seed data yüklə və Firebase-ə yaz
+        // Firebase boşdur — ilk dəfə, seed data yüklə
         seedData();
         saveState();
       }
@@ -3037,7 +3046,9 @@ window.sendTestNotification = async function() {
 
 // GitHub token-u dinamik oxu (localStorage-dən)
 function getGHToken(){
-  return window._ghToken || localStorage.getItem('ppc_gh_token') || GITHUB_TOKEN || '';
+  const tok = window._ghToken || localStorage.getItem('ppc_gh_token') || GITHUB_TOKEN || '';
+  if(!tok) console.warn('[Bildiriş] GitHub token tapılmadı! ⚙️ Sistem Tənzimləmələri-dən daxil edin.');
+  return tok;
 }
 
 async function triggerGitHubAction(token, workerId, title, body) {
@@ -3097,6 +3108,22 @@ function showApp(user) {
   document.getElementById('sf-role-el').textContent = user.role;
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   loadState(); // seedData() yalnız Firebase boşdursa çağırılır
+
+  // GitHub token varsa yüklə
+  if(!localStorage.getItem('ppc_gh_token')) {
+    // Token yoxdursa topbar-da xəbərdarlıq göstər
+    setTimeout(()=>{
+      const tbr = document.getElementById('tb-actions');
+      if(tbr && !document.getElementById('token-warn')) {
+        const w = document.createElement('div');
+        w.id = 'token-warn';
+        w.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;font-size:11px;color:#92400E;cursor:pointer';
+        w.innerHTML='⚠️ Bildiriş token yoxdur';
+        w.onclick = ()=>openModal('modal-settings');
+        tbr.prepend(w);
+      }
+    }, 1000);
+  }
 }
 
 window.doAdminLogin = async function() {
