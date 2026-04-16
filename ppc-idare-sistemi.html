@@ -1248,28 +1248,44 @@ function seedData() {
 
 // ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
 function saveState() {
-  try { localStorage.setItem('ppc_v2', JSON.stringify({workers:S.workers,tasks:S.tasks,funnel:S.funnel,adSources:S.adSources})); } catch(e){}
-  if(db) set(ref(db,'ppcdata'), {workers:S.workers,tasks:S.tasks,funnel:S.funnel,adSources:S.adSources,pasientler:S.pasientler,rehberler:S.rehberler,hedefler:S.hedefler,vakansiyalar:S.vakansiyalar,yeniGelenler:S.yeniGelenler}).catch(()=>{});
+  const data = {
+    workers:S.workers, tasks:S.tasks, funnel:S.funnel,
+    adSources:S.adSources, pasientler:S.pasientler,
+    rehberler:S.rehberler, hedefler:S.hedefler,
+    vakansiyalar:S.vakansiyalar, yeniGelenler:S.yeniGelenler
+  };
+  try{ localStorage.setItem('ppc_v2', JSON.stringify(data)); }catch(e){}
+  if(db) set(ref(db,'ppcdata'), data).catch(e=>console.error('Firebase yazma xətası:',e));
 }
 function loadState() {
   if(db) {
     onValue(ref(db,'ppcdata'), snap => {
       const d = snap.val();
-      if(d) {
-        if(d.workers?.length) S.workers = d.workers;
-        if(d.tasks?.length)   S.tasks   = d.tasks;
-        if(d.funnel)          S.funnel  = d.funnel;
-        if(d.adSources)       S.adSources = d.adSources;
-        if(d.pasientler)     S.pasientler = d.pasientler;
-        if(d.rehberler)      S.rehberler  = d.rehberler;
-        if(d.hedefler)       S.hedefler   = d.hedefler;
-        if(d.vakansiyalar)   S.vakansiyalar = d.vakansiyalar;
-        if(d.yeniGelenler)   S.yeniGelenler = d.yeniGelenler;
-      } else saveState();
+      if(d && (d.workers?.length || d.tasks?.length)) {
+        // Firebase-də real məlumat var — onları istifadə et
+        if(d.workers?.length)    S.workers    = d.workers;
+        if(d.tasks?.length)      S.tasks      = d.tasks;
+        if(d.funnel)             S.funnel     = d.funnel;
+        if(d.adSources)          S.adSources  = d.adSources;
+        if(d.pasientler?.length) S.pasientler = d.pasientler;
+        if(d.rehberler?.length)  S.rehberler  = d.rehberler;
+        if(d.hedefler?.length)   S.hedefler   = d.hedefler;
+        if(d.vakansiyalar?.length) S.vakansiyalar = d.vakansiyalar;
+        if(d.yeniGelenler?.length) S.yeniGelenler = d.yeniGelenler;
+      } else {
+        // Firebase boşdur — seed data yüklə və Firebase-ə yaz
+        seedData();
+        saveState();
+      }
       refreshAll();
-    }, () => { try{const s=localStorage.getItem('ppc_v2');if(s){const d=JSON.parse(s);if(d.workers?.length)S.workers=d.workers;if(d.tasks?.length)S.tasks=d.tasks;if(d.funnel)S.funnel=d.funnel;}}catch(e){} refreshAll(); });
+    }, () => {
+      // Firebase bağlantı xətası — seed data istifadə et
+      seedData();
+      refreshAll();
+    });
   } else {
-    try{const s=localStorage.getItem('ppc_v2');if(s){const d=JSON.parse(s);if(d.workers?.length)S.workers=d.workers;if(d.tasks?.length)S.tasks=d.tasks;if(d.funnel)S.funnel=d.funnel;if(d.adSources)S.adSources=d.adSources;if(d.pasientler?.length)S.pasientler=d.pasientler;if(d.rehberler?.length)S.rehberler=d.rehberler;if(d.hedefler?.length)S.hedefler=d.hedefler;if(d.vakansiyalar?.length)S.vakansiyalar=d.vakansiyalar;if(d.yeniGelenler?.length)S.yeniGelenler=d.yeniGelenler;}}catch(e){}
+    // Firebase yoxdur — seed data istifadə et
+    seedData();
     refreshAll();
   }
 }
@@ -3066,7 +3082,7 @@ function showApp(user) {
   document.getElementById('sf-name').textContent = user.name;
   document.getElementById('sf-role-el').textContent = user.role;
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  seedData(); loadState();
+  loadState(); // seedData() yalnız Firebase boşdursa çağırılır
 }
 
 window.doAdminLogin = async function() {
