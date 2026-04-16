@@ -2813,6 +2813,20 @@ window.approveWorker = async function(id) {
     // Müraciəti təsdiqlənmiş kimi işarələ + workerId saxla
     await update(ref(db,'isci_muraciatleri/'+id), {status:'approved', workerId:newWorker.id, approvedAt:Date.now()});
 
+    // Firebase Auth-da hesab yarat (işçi giriş edə bilsin)
+    try {
+      const { getAuth, createUserWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+      const adminAuth = getAuth();
+      const email = m.username + '@ppc.az';
+      await createUserWithEmailAndPassword(adminAuth, email, m.pass);
+      console.log('[Auth] Hesab yaradıldı:', email);
+    } catch(authErr) {
+      // Hesab artıq varsa xəta vermir
+      if (authErr.code !== 'auth/email-already-in-use') {
+        console.log('[Auth] Hesab yaratma xətası:', authErr.message);
+      }
+    }
+
     toast(m.ad+' '+m.soyad+' təsdiqləndi ✓ İndi sistemə daxil ola bilər','success');
     renderMuraciatler();
   } catch(e) { toast('Xəta: '+e.message,'error'); }
