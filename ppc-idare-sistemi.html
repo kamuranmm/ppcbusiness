@@ -278,12 +278,6 @@ tbody tr:hover td{background:var(--surface2)}
   .tab-btn{white-space:nowrap;flex-shrink:0}
 }
 </style>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1B3A6B">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PPC Sistem">
-<link rel="apple-touch-icon" href="ppc-icon-192.png">
 </head>
 <body>
 <!-- ══ ADMIN LOGIN ══ -->
@@ -1783,9 +1777,10 @@ window.saveTask = function() {
   };
   S.tasks.push(newTask);
   saveState(); closeModal('modal-task'); refreshAll();
-  // Bildiriş göndər
-  sendTaskNotification(newTask.wid, newTask.name, 'Admin');
-  toast('Tapşırıq əlavə edildi ✓ Bildiriş göndərildi','success');
+  // Push bildirişi göndər
+  const assignerName = document.getElementById('sf-name')?.textContent || 'Admin';
+  sendTaskNotification(newTask.wid, newTask.name, assignerName);
+  toast('Tapşırıq əlavə edildi ✓','success');
 }
 
 window.saveWorker = function() {
@@ -2853,6 +2848,81 @@ window.togglePassView = function(elId, pass) {
   el.style.color = _passVisible[elId] ? 'var(--text)' : 'var(--text3)';
 };
 
+// ── İŞÇİ BİLDİRİŞİ — GitHub Actions + Firebase ─────────────────────────────
+const GITHUB_OWNER = 'kamuranmm';
+const GITHUB_REPO  = 'ppcbusiness';
+const GITHUB_TOKEN = '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';
+
+async function sendTaskNotification(workerId, taskName, assignerName) {
+  if(!workerId) return;
+
+  // 1. Firebase DB-ə notification yaz (portal açıqdırsa görsün)
+  try {
+    if(db) await set(ref(db, 'notifications/' + workerId + '/' + Date.now()), {
+      title: '📋 Yeni Tapşırıq',
+      body:  (assignerName||'Admin') + ' sizə tapşırıq verdi: ' + taskName,
+      type:  'task',
+      read:  false,
+      ts:    Date.now()
+    });
+  } catch(e) {}
+
+  // 2. GitHub Actions vasitəsilə push bildirişi göndər
+  if(!GITHUB_TOKEN) return; // Token yoxdursa keç
+  try {
+    await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + GITHUB_TOKEN,
+          'Accept':        'application/vnd.github+json',
+          'Content-Type':  'application/json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        },
+        body: JSON.stringify({
+          event_type: 'send-notification',
+          client_payload: {
+            workerId,
+            title: '📋 Yeni Tapşırıq',
+            body:  (assignerName||'Admin') + ' sizə tapşırıq verdi: ' + taskName
+          }
+        })
+      }
+    );
+    console.log('[Bildiriş] GitHub Actions tetikləndi →', workerId);
+  } catch(e) {
+    console.log('[Bildiriş] Xəta:', e.message);
+  }
+}
+
+// Tapşırıq tamamlananda adminə bildiriş
+async function sendCompletionNotification(taskName, workerName) {
+  if(!GITHUB_TOKEN) return;
+  try {
+    await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dispatches`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + GITHUB_TOKEN,
+          'Accept':        'application/vnd.github+json',
+          'Content-Type':  'application/json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        },
+        body: JSON.stringify({
+          event_type: 'send-notification',
+          client_payload: {
+            workerId: 'admin',
+            title: '✅ Tapşırıq Tamamlandı',
+            body:  workerName + ': "' + taskName + '"'
+          }
+        })
+      }
+    );
+  } catch(e) {}
+}
+
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast = function(msg, type='') {
   const t=document.getElementById('toast');
@@ -2861,220 +2931,6 @@ window.toast = function(msg, type='') {
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-
-// ── PWA + BİLDİRİŞ SİSTEMİ ────────────────────────────────────────────────────
-const FCM_VAPID_KEY = 'BDUwz3e8ZBePatW2Kr6PdXQZUCpCdnO3kP4ivAT3jGwNjiJP245tdBykkRUbQH6_2NfoQs2ZTDw2cCzF7Fs_95I';
-
-let fcmToken = null;
-
-async function initPWA() {
-  // 1. Service Worker qeydiyyat
-  if ('serviceWorker' in navigator) {
-    try {
-      const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
-      console.log('[PWA] SW registered:', reg.scope);
-    } catch(e) {
-      console.log('[PWA] SW error:', e.message);
-    }
-  }
-
-  // 2. Bildiriş icazəsi
-  if ('Notification' in window && Notification.permission === 'default') {
-    // 3 saniyə sonra sor (giriş etdikdən sonra)
-    setTimeout(requestNotifPermission, 3000);
-  } else if (Notification.permission === 'granted') {
-    await registerFCMToken();
-  }
-
-  // 3. iOS "Ana ekrana əlavə et" tövsiyəsi
-  if (isIOS() && !isInStandaloneMode()) {
-    showInstallBanner();
-  }
-}
-
-async function requestNotifPermission() {
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      await registerFCMToken();
-      showNotifToast('Bildirişlər aktiv edildi ✓');
-    }
-  } catch(e) {}
-}
-
-async function registerFCMToken() {
-  try {
-    const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
-    const messaging = getMessaging();
-    fcmToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
-    if (fcmToken) {
-      // Token-i Firebase-ə saxla (işçi ID ilə)
-      const uid = (typeof ME !== 'undefined' && ME?.id) || 
-                  (typeof currentUser !== 'undefined' && currentUser?.uid) || 
-                  'admin';
-      await set(ref(db, 'fcm_tokens/' + uid), {
-        token: fcmToken,
-        platform: getMobilePlatform(),
-        updatedAt: Date.now()
-      });
-      console.log('[FCM] Token saved for:', uid);
-    }
-    // Ön planda gələn bildirişlər
-    onMessage(messaging, payload => {
-      const { title, body } = payload.notification || {};
-      showNotifToast((title||'PPC') + ': ' + (body||'Yeni bildiriş'));
-    });
-  } catch(e) {
-    console.log('[FCM] Token error:', e.message);
-  }
-}
-
-// Tapşırıq bildirişi göndər (admin tərəfindən)
-async function sendTaskNotification(workerId, taskName, assignerName) {
-  try {
-    const snap = await get(ref(db, 'fcm_tokens/' + workerId));
-    const tokenData = snap.val();
-    if (!tokenData?.token) return;
-
-    // Firebase-ə bildiriş yazırıq — Cloud Function və ya FCM HTTP API lazımdır
-    // Hazırda in-app real-time notification ilə işləyir
-    await set(ref(db, 'notifications/' + workerId + '/' + Date.now()), {
-      title: '📋 Yeni Tapşırıq',
-      body: assignerName + ' sizə tapşırıq verdi: ' + taskName,
-      type: 'task',
-      read: false,
-      ts: Date.now()
-    });
-  } catch(e) {}
-}
-
-// Real-time bildiriş listener (işçi portalı üçün)
-function listenNotifications(workerId) {
-  if (!workerId || !db) return;
-  onValue(ref(db, 'notifications/' + workerId), snap => {
-    const data = snap.val() || {};
-    const unread = Object.values(data).filter(n => !n.read);
-    updateNotifBadge(unread.length);
-    if (unread.length > 0) {
-      const latest = unread.sort((a,b) => b.ts-a.ts)[0];
-      // Brauzer bildirişi
-      if (Notification.permission === 'granted' && document.hidden) {
-        new Notification(latest.title, {
-          body: latest.body,
-          icon: 'ppc-icon-192.png',
-          badge: 'ppc-badge-72.png',
-          vibrate: [200,100,200]
-        });
-      }
-    }
-  });
-}
-
-function updateNotifBadge(count) {
-  const badge = document.getElementById('notif-badge');
-  if (badge) {
-    badge.textContent = count > 0 ? count : '';
-    badge.style.display = count > 0 ? 'flex' : 'none';
-  }
-}
-
-function showNotifToast(msg) {
-  if (typeof toast === 'function') toast(msg, 'success');
-}
-
-// Platform helpers
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
-function isInStandaloneMode() {
-  return window.matchMedia('(display-mode: standalone)').matches || 
-         window.navigator.standalone === true;
-}
-function getMobilePlatform() {
-  if (/android/i.test(navigator.userAgent)) return 'android';
-  if (isIOS()) return 'ios';
-  return 'web';
-}
-
-// iOS "Ana ekrana əlavə et" banneri
-function showInstallBanner() {
-  const banner = document.createElement('div');
-  banner.id = 'install-banner';
-  banner.style.cssText = `
-    position:fixed;bottom:0;left:0;right:0;z-index:9999;
-    background:#1B3A6B;color:#fff;padding:14px 16px;
-    display:flex;align-items:center;gap:12px;
-    box-shadow:0 -2px 20px rgba(0,0,0,.3);
-  `;
-  banner.innerHTML = `
-    <img src="ppc-icon-192.png" style="width:42px;height:42px;border-radius:10px;flex-shrink:0">
-    <div style="flex:1">
-      <div style="font-size:13px;font-weight:700">PPC Sistemə ana ekrana əlavə et</div>
-      <div style="font-size:11px;opacity:.7;margin-top:2px">
-        Safari-də <strong>Paylaş</strong> → <strong>Ana ekrana əlavə et</strong>
-      </div>
-    </div>
-    <button onclick="document.getElementById('install-banner').remove()" 
-      style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit">
-      Bağla
-    </button>
-  `;
-  document.body.appendChild(banner);
-}
-
-// Android "Yüklə" prompt
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  showAndroidInstallBtn();
-});
-
-function showAndroidInstallBtn() {
-  const btn = document.getElementById('install-app-btn');
-  if (btn) btn.style.display = 'flex';
-}
-
-window.installApp = async function() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  if (outcome === 'accepted') {
-    if (typeof toast === 'function') toast('Tətbiq yüklənir... ✓', 'success');
-  }
-  deferredPrompt = null;
-  const btn = document.getElementById('install-app-btn');
-  if (btn) btn.style.display = 'none';
-};
-
-// Topbar-a bildiriş ikonu + yüklə düyməsi əlavə et
-function addTopbarActions() {
-  const tbRight = document.getElementById('tb-actions') || document.getElementById('tb-right');
-  if (!tbRight) return;
-
-  tbRight.innerHTML = `
-    <button id="install-app-btn" onclick="installApp()" title="Tətbiqi yüklə"
-      style="display:none;align-items:center;gap:6px;padding:7px 12px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
-      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path d="M12 16l-4-4h3V4h2v8h3l-4 4z"/><path d="M20 18H4v2h16v-2z"/>
-      </svg>
-      Telefona yüklə
-    </button>
-    <button id="notif-btn" onclick="requestNotifPermission()" title="Bildirişlər"
-      style="position:relative;width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">
-      🔔
-      <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center"></span>
-    </button>
-  ` + tbRight.innerHTML;
-}
-
-// Init
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    addTopbarActions();
-    initPWA();
-  }, 500);
-});
 
 // ── ADMIN GİRİŞ SİSTEMİ ─────────────────────────────────────────────────────
 const ADMIN_USERS = [
