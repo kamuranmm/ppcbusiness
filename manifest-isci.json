@@ -1,0 +1,26 @@
+{
+  "name": "PPC İşçi Portalı",
+  "short_name": "PPC Portal",
+  "description": "Pozitiv Psixologiya Mərkəzi — İşçi Portalı",
+  "start_url": "/ppc-isci-portal.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#122848",
+  "theme_color": "#1B3A6B",
+  "lang": "az",
+  "icons": [
+    {
+      "src": "ppc-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "ppc-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
