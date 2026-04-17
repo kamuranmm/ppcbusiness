@@ -423,16 +423,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             <div id="prof-cats"></div>
           </div>
         </div>
-        <!-- Telegram ID -->
+        <!-- Telegram -->
       <div class="card" style="margin-bottom:14px">
         <div class="card-hdr"><span class="card-title">📱 Telegram Bildirişi</span></div>
         <div id="tg-status" style="margin-bottom:12px"></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input class="fi" id="tg-chat-id" type="text" placeholder="Telegram Chat ID (məs: 5253859834)" style="flex:1">
-          <button class="btn btn-blue" onclick="saveTgId()">Saxla</button>
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:8px">
-          Chat ID almaq üçün: Telegram-da <strong>@Ppcbusiness_bot</strong>-a /start yazın → ID-nizi kopyalayıb buraya yapışdırın
+        <div id="tg-connect-btn-wrap">
+          <button onclick="connectTelegram()" 
+            style="width:100%;padding:12px;background:#2B74D4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px">
+            <span style="font-size:20px">✈️</span>
+            Telegram-a qoş
+          </button>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">
+            Düyməyə basın → Telegram açılır → /start yazın → Avtomatik qoşulur
+          </div>
         </div>
       </div>
 
@@ -1357,24 +1360,44 @@ function showInAppNotif(title, body) {
   toast(title + ': ' + body, 'success');
 }
 
-// ── TELEGRAM ID SAXLA ───────────────────────────────────────────────────────
-window.saveTgId = async function() {
-  const chatId = document.getElementById('tg-chat-id')?.value?.trim();
-  if(!chatId || isNaN(chatId)) {
-    toast('Düzgün Chat ID daxil edin', 'error');
-    return;
-  }
-  // Firebase-ə yaz
-  if(db && ME?.id) {
-    await set(ref(db, 'tg_ids/' + ME.id), {
-      chatId: chatId,
-      name: ME.name,
-      workerId: ME.id,
-      ts: Date.now()
-    });
-  }
-  toast('Telegram qoşuldu ✓ Artıq bildirişlər gələcək', 'success');
-  loadTgStatus();
+// ── TELEGRAM QOŞULMA ─────────────────────────────────────────────────────────
+window.connectTelegram = function() {
+  // Teleqram-ı aç, /start yaz
+  // Bot özü Chat ID-ni Firebase-ə yazacaq, biz polling edəcəyik
+  const botUrl = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
+  window.open(botUrl, '_blank');
+  
+  // Düyməni dəyiş
+  const wrap = document.getElementById('tg-connect-btn-wrap');
+  if(wrap) wrap.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text3);font-size:12px">⏳ Telegram-da /start yazdıqdan sonra avtomatik qoşulacaq...</div>';
+  
+  // Firebase-i dinlə — bot chat ID-ni yazanda bildiriş ver
+  const pollRef = ref(db, 'tg_pending');
+  const unsubscribe = onValue(pollRef, snap => {
+    const data = snap.val() || {};
+    // Bizim işçiyə uyğun pending tapşırıq varmı?
+    // Bot Firebase-ə worker_ID ilə yazır
+    const match = Object.values(data).find(x => 
+      x.workerId === ME.id || 
+      (x.ts && Date.now() - x.ts < 120000) // Son 2 dəqiqədə
+    );
+    if(match?.chatId) {
+      // Chat ID tapıldı — Firebase-ə yaz
+      set(ref(db, 'tg_ids/' + ME.id), {
+        chatId: String(match.chatId),
+        name: ME.name,
+        workerId: ME.id,
+        ts: Date.now()
+      }).then(() => {
+        unsubscribe();
+        loadTgStatus();
+        toast('Telegram uğurla qoşuldu! ✅', 'success');
+      });
+    }
+  });
+  
+  // 2 dəqiqə sonra listener-i dayandır
+  setTimeout(() => unsubscribe(), 120000);
 };
 
 function loadTgStatus() {
@@ -1382,15 +1405,24 @@ function loadTgStatus() {
   get(ref(db, 'tg_ids/' + ME.id)).then(snap => {
     const d = snap.val();
     const el = document.getElementById('tg-status');
-    const input = document.getElementById('tg-chat-id');
+    const wrap = document.getElementById('tg-connect-btn-wrap');
     if(d?.chatId) {
-      if(el) el.innerHTML = '<span style="color:var(--green);font-size:12px">✅ Telegram qoşulub — ID: ' + d.chatId + '</span>';
-      if(input) input.value = d.chatId;
+      if(el) el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#ECFDF5;border-radius:8px;border:1px solid #A7F3D0"><span style="font-size:18px">✅</span><div><div style="font-size:12.5px;font-weight:600;color:var(--green)">Telegram qoşulub</div><div style="font-size:11px;color:var(--text3)">Yeni tapşırıqlarda bildiriş alacaqsınız</div></div><button onclick="disconnectTelegram()" style="margin-left:auto;background:none;border:1px solid var(--border);padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;color:var(--text3)">Ayır</button></div>';
+      if(wrap) wrap.style.display = 'none';
     } else {
-      if(el) el.innerHTML = '<span style="color:var(--text3);font-size:12px">❌ Telegram qoşulmayıb</span>';
+      if(el) el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0">Telegram qoşulmayıb</div>';
+      if(wrap) wrap.style.display = 'block';
     }
   }).catch(()=>{});
 }
+
+window.disconnectTelegram = function() {
+  if(!db || !ME?.id) return;
+  set(ref(db, 'tg_ids/' + ME.id), null).then(() => {
+    loadTgStatus();
+    toast('Telegram ayrıldı', '');
+  });
+};
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast=function(msg,type=''){
