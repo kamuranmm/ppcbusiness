@@ -3003,7 +3003,8 @@ async function sendTaskNotification(workerId, taskName, assignerName) {
 
   // 2. GitHub Actions vasitəsilə push bildirişi göndər
   const ghTok = getGHToken();
-  if(!ghTok) return;
+  console.log('[Bildiriş] Token:', ghTok?ghTok.slice(0,10)+'...':'YOX!');
+  if(!ghTok){ console.warn('[Bildiriş] Token yoxdur — ⚙️ Tənzimləmələrdən daxil edin'); return; }
   const ok = await triggerGitHubAction(
     ghTok, workerId,
     '📋 Yeni Tapşırıq',
@@ -3098,6 +3099,8 @@ function getGHToken(){
 }
 
 async function triggerGitHubAction(token, workerId, title, body) {
+  console.log('[GitHub] dispatch göndərilir, token:', token?token.slice(0,10)+'...':'YOX!');
+  if(!token){ console.error('[GitHub] TOKEN YOX!'); return false; }
   try {
     const resp = await fetch(
       'https://api.github.com/repos/kamuranmm/ppcbusiness/dispatches',
@@ -3115,8 +3118,12 @@ async function triggerGitHubAction(token, workerId, title, body) {
         })
       }
     );
+    console.log('[GitHub] Status:', resp.status, resp.status===204?'✓ Uğurlu':'✗ Xəta');
     return resp.status===204;
-  } catch(e){ return false; }
+  } catch(e){
+    console.error('[GitHub] Fetch xətası:', e.message);
+    return false;
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
