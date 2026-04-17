@@ -1498,4 +1498,172 @@ window.toast=function(msg,type=''){
 // onAuthStateChanged yuxarıda artıq handle edir
 </script>
 </body>
+</html>// ── PROFİL ─────────────────────────────────────────────────────────────────────
+function renderProfile(){
+  if(!ME) return;
+  const pts = getPts(ME.id);
+  const mt  = myTasks();
+  const done = mt.filter(t=>t.done);
+  const rank = myRank();
+  const RISK_LIMIT = 200;
+
+  const av = document.getElementById('prof-av');
+  if(av){ av.textContent = initials(ME.name); av.style.cssText=`background:${ME.color};width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;margin:0 auto 10px`; }
+  const profName = document.getElementById('prof-name'); if(profName) profName.textContent = ME.name;
+  const profRole = document.getElementById('prof-role'); if(profRole) profRole.textContent = ME.role+' · '+ME.dept;
+  const profPts  = document.getElementById('prof-pts');  if(profPts)  profPts.textContent  = pts;
+
+  const tagsEl = document.getElementById('prof-tags');
+  if(tagsEl) tagsEl.innerHTML = [
+    '<span class="badge b-blue">🏢 '+ME.branch+'</span>',
+    '<span class="badge b-gray">📂 '+ME.dept+'</span>',
+    '<span class="badge b-amber" style="color:var(--amber)">⭐ '+pts+' xal</span>',
+    '<span class="badge b-'+(rank<=3?'green':'gray')+'">🏅 '+rank+'. yer</span>',
+  ].join('');
+
+  // KPI
+  const kpiMap = {
+    'Psixoloq':['Seans sayı','Pasient davamlılığı','Hesabat vaxtı','Müştəri məmnuniyyəti'],
+    'Zəng Mərkəzi Operatoru':['Cavablandırılan zənglər','Qeydiyyata çevrilmə','Geri dönüş sürəti','Müştəri məmnuniyyəti'],
+    'Satış Meneceri':['Görüş sayı','Satışa keçid faizi','Yeni müştəri','Aylıq hədəf'],
+    'Loqoped':['Seans sayı','Müştəri irəliləməsi','Hesabat dəqiqliyi','Valideyn məmnuniyyəti'],
+  };
+  const kpis = kpiMap[ME.role] || ['Tapşırıq tamamlama','Vaxtında teslim','Keyfiyyət','Davamlılıq'];
+  const kpiVals = [pct(done.length, mt.length||1), Math.min(pts/2,100), Math.min(pts/1.5,100), 75];
+  const kpiEl = document.getElementById('prof-kpi');
+  if(kpiEl) kpiEl.innerHTML = kpis.map((k,i) => {
+    const v = Math.round(kpiVals[i]);
+    const color = v>70?'var(--green)':v>40?'var(--amber)':'var(--red)';
+    return '<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
+      + '<div style="font-size:12px;color:var(--text2)">'+k+'</div>'
+      + '<div style="font-size:13px;font-weight:700;color:'+color+'">'+v+'%</div>'
+      + '</div>'
+      + '<div class="prog-bar"><div class="prog-fill" style="width:'+v+'%;background:'+color+'"></div></div>'
+      + '</div>';
+  }).join('');
+
+  // Kateqoriya xalları
+  const cats = [...new Set(mt.map(t=>t.cat))];
+  const catsEl = document.getElementById('prof-cats');
+  if(catsEl) catsEl.innerHTML = cats.map(c => {
+    const ct = mt.filter(t=>t.cat===c);
+    const cp = ct.filter(t=>t.done).reduce((s,t)=>s+t.pts, 0);
+    const cr = pct(ct.filter(t=>t.done).length, ct.length);
+    return '<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+      + '<div style="font-size:12px;color:var(--text2)">'+c+'</div>'
+      + '<div style="font-size:13px;font-weight:700;color:'+ME.color+'">'+cp+' xal</div>'
+      + '</div>'
+      + '<div class="prog-bar"><div class="prog-fill" style="width:'+cr+'%;background:'+ME.color+'"></div></div>'
+      + '</div>';
+  }).join('') || '<div style="font-size:12px;color:var(--text3);padding:10px 0">Hələ məlumat yoxdur</div>';
+
+  // Telegram status
+  loadTgStatus();
+
+  // Risk xəbərdarlığı
+  const riskWarn = document.getElementById('prof-risk-warn');
+  if(riskWarn){
+    if(pts < RISK_LIMIT){
+      riskWarn.style.display = 'block';
+      const rtxt = document.getElementById('prof-risk-txt');
+      if(rtxt) rtxt.textContent = 'Aylıq '+RISK_LIMIT+' xal limitinin altındasınız ('+pts+' xal). Daha çox tapşırıq tamamlayaraq performansınızı artırın. Çatışmayan: '+(RISK_LIMIT-pts)+' xal.';
+    } else {
+      riskWarn.style.display = 'none';
+    }
+  }
+}
+
+// ── IN-APP BİLDİRİŞ ──────────────────────────────────────────────────────────
+function showInAppNotif(title, body) {
+  // Köhnə varsa sil
+  const old = document.getElementById('inapp-notif');
+  if(old) old.remove();
+
+  const el = document.createElement('div');
+  el.id = 'inapp-notif';
+  el.style.cssText = `
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    z-index:9999;background:#1B3A6B;color:#fff;
+    padding:14px 20px;border-radius:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,.3);
+    display:flex;align-items:center;gap:12px;
+    min-width:280px;max-width:90vw;
+    animation:slideDown .3s ease;
+  `;
+  el.innerHTML = `
+    <div style="font-size:22px">📋</div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700">${title}</div>
+      <div style="font-size:12px;opacity:.8;margin-top:2px">${body}</div>
+    </div>
+    <button onclick="this.parentElement.remove()" 
+      style="background:rgba(255,255,255,.2);border:none;color:#fff;
+      width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px">×</button>
+  `;
+
+  // Animasiya CSS
+  if(!document.getElementById('notif-style')){
+    const style = document.createElement('style');
+    style.id = 'notif-style';
+    style.textContent = `
+      @keyframes slideDown {
+        from { opacity:0; transform:translateX(-50%) translateY(-20px); }
+        to   { opacity:1; transform:translateX(-50%) translateY(0); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(el);
+  // 5 saniyə sonra özü bağlansın
+  setTimeout(() => el?.remove(), 5000);
+  
+  // Toast da göstər
+  toast(title + ': ' + body, 'success');
+}
+
+// ── TELEGRAM QOŞULMA ─────────────────────────────────────────────────────────
+window.connectTelegram = function() {
+  const botUrl = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
+  window.open(botUrl, '_blank');
+};
+
+function loadTgStatus() {
+  if(!db || !ME?.id) return;
+  get(ref(db, 'tg_ids/' + ME.id)).then(snap => {
+    const d = snap.val();
+    const el = document.getElementById('tg-status');
+    const wrap = document.getElementById('tg-connect-btn-wrap');
+    if(d?.chatId) {
+      if(el) el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#ECFDF5;border-radius:8px;border:1px solid #A7F3D0"><span style="font-size:18px">✅</span><div><div style="font-size:12.5px;font-weight:600;color:var(--green)">Telegram qoşulub</div><div style="font-size:11px;color:var(--text3)">Yeni tapşırıqlarda bildiriş alacaqsınız</div></div><button onclick="disconnectTelegram()" style="margin-left:auto;background:none;border:1px solid var(--border);padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;color:var(--text3)">Ayır</button></div>';
+      if(wrap) wrap.style.display = 'none';
+    } else {
+      if(el) el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0">Telegram qoşulmayıb</div>';
+      if(wrap) wrap.style.display = 'block';
+    }
+  }).catch(()=>{});
+}
+
+window.disconnectTelegram = function() {
+  if(!db || !ME?.id) return;
+  set(ref(db, 'tg_ids/' + ME.id), null).then(() => {
+    loadTgStatus();
+    toast('Telegram ayrıldı', '');
+  });
+};
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+window.toast=function(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast ${type}`;
+  void t.offsetWidth; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+// onAuthStateChanged yuxarıda artıq handle edir
+</script>
+</body>
 </html>
