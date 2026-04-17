@@ -963,9 +963,7 @@ function enterApp() {
   updateSidebar();
   goPage('overview', document.querySelector('.nav-item'));
   setTimeout(() => { addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
-
-
-
+}
 
 window.doLogout = async function() {
   try { await signOut(auth); } catch(e) {}
@@ -1267,118 +1265,7 @@ function renderMyHedefler(){
   </div>`;
 }
 
-// ── PROFİL ───────────────────────────────────────────────────────────────────
-function renderProfile(){
-  if(!ME) return;
-  const pts=getPts(ME.id);
-  const mt=myTasks();
-  const done=mt.filter(t=>t.done);
-  const rank=myRank();
-  const RISK_LIMIT=200;
 
-  document.getElementById('prof-av').textContent=initials(ME.name);
-  document.getElementById('prof-av').style.cssText=`background:${ME.color};width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;flex-shrink:0`;
-  document.getElementById('prof-name').textContent=ME.name;
-  document.getElementById('prof-role').textContent=ME.role+' · '+ME.dept;
-  document.getElementById('prof-pts').textContent=pts;
-  document.getElementById('prof-tags').innerHTML=[
-    `<span class="badge b-blue">🏢 ${ME.branch}</span>`,
-    `<span class="badge b-gray">📂 ${ME.dept}</span>`,
-    `<span class="badge b-amber" style="color:var(--amber)">⭐ ${pts} xal</span>`,
-    `<span class="badge b-${rank<=3?'green':'gray'}">🏅 ${rank}. yer</span>`,
-  ].join('');
-
-  // KPI
-  const kpiMap = {
-    'Psixoloq':['Seans sayı','Pasient davamlılığı','Hesabat vaxtı','Müştəri məmnuniyyəti'],
-    'Zəng Mərkəzi Operatoru':['Cavablandırılan zənglər','Qeydiyyata çevrilmə','Geri dönüş sürəti','Müştəri məmnuniyyəti'],
-    'Satış Meneceri':['Görüş sayı','Satışa keçid faizi','Yeni müştəri','Aylıq hədəf'],
-    'Marketinq Meneceri':['Post sayı','Baxış artımı','Müraciət sayı','Kontent planı'],
-    'Loqoped':['Seans sayı','Müştəri irəliləməsi','Hesabat dəqiqliyi','Valideyn məmnuniyyəti'],
-    'Sosial Media Meneceri':['Post sayı','Follower artımı','Engagement','Kampaniya nəticəsi'],
-  };
-  const kpis=(kpiMap[ME.role])||['Tapşırıq tamamlama','Vaxtında teslim','Keyfiyyət','Davamlılıq'];
-  const kpiVals=[pct(done.length,mt.length||1),Math.min(pts/2,100),Math.min(pts/1.5,100),75];
-  document.getElementById('prof-kpi').innerHTML=kpis.map((k,i)=>`
-    <div style="padding:7px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-        <div style="font-size:12px;color:var(--text2)">${k}</div>
-        <div style="font-size:13px;font-weight:700;color:${kpiVals[i]>70?'var(--green)':kpiVals[i]>40?'var(--amber)':'var(--red)'}">${Math.round(kpiVals[i])}%</div>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${kpiVals[i]}%;background:${kpiVals[i]>70?'var(--green)':kpiVals[i]>40?'var(--amber)':'var(--red)'}"></div></div>
-    </div>`).join('');
-
-  // Category pts
-  const cats=[...new Set(mt.map(t=>t.cat))];
-  document.getElementById('prof-cats').innerHTML = cats.map(c => {
-    const ct = mt.filter(t => t.cat===c);
-    const cp = ct.filter(t => t.done).reduce((s,t) => s+t.pts, 0);
-    const cr = pct(ct.filter(t => t.done).length, ct.length);
-    return '<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
-      + '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
-      + '<div style="font-size:12px;color:var(--text2)">'+c+'</div>'
-      + '<div style="font-size:13px;font-weight:700;color:'+ME.color+'">'+cp+' xal</div>'
-      + '</div>'
-      + '<div class="prog-bar"><div class="prog-fill" style="width:'+cr+'%;background:'+ME.color+'"></div></div>'
-      + '</div>';
-  }).join('') || '<div style="font-size:12px;color:var(--text3);padding:10px 0">Hələ məlumat yoxdur</div>';
-
-  // Risk xəbərdarlığı
-  const riskWarn=document.getElementById('prof-risk-warn');
-  if(pts<RISK_LIMIT){
-    riskWarn.style.display='block';
-    document.getElementById('prof-risk-txt').textContent=`Aylıq ${RISK_LIMIT} xal limitinin altındasınız (${pts} xal). Daha çox tapşırıq tamamlayaraq performansınızı artırın. Çatışmayan: ${RISK_LIMIT-pts} xal.`;
-  } else { riskWarn.style.display='none'; }
-}
-
-// ── IN-APP BİLDİRİŞ ──────────────────────────────────────────────────────────
-function showInAppNotif(title, body) {
-  // Köhnə varsa sil
-  const old = document.getElementById('inapp-notif');
-  if(old) old.remove();
-
-  const el = document.createElement('div');
-  el.id = 'inapp-notif';
-  el.style.cssText = `
-    position:fixed;top:16px;left:50%;transform:translateX(-50%);
-    z-index:9999;background:#1B3A6B;color:#fff;
-    padding:14px 20px;border-radius:12px;
-    box-shadow:0 4px 20px rgba(0,0,0,.3);
-    display:flex;align-items:center;gap:12px;
-    min-width:280px;max-width:90vw;
-    animation:slideDown .3s ease;
-  `;
-  el.innerHTML = `
-    <div style="font-size:22px">📋</div>
-    <div style="flex:1">
-      <div style="font-size:13px;font-weight:700">${title}</div>
-      <div style="font-size:12px;opacity:.8;margin-top:2px">${body}</div>
-    </div>
-    <button onclick="this.parentElement.remove()" 
-      style="background:rgba(255,255,255,.2);border:none;color:#fff;
-      width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px">×</button>
-  `;
-
-  // Animasiya CSS
-  if(!document.getElementById('notif-style')){
-    const style = document.createElement('style');
-    style.id = 'notif-style';
-    style.textContent = `
-      @keyframes slideDown {
-        from { opacity:0; transform:translateX(-50%) translateY(-20px); }
-        to   { opacity:1; transform:translateX(-50%) translateY(0); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  document.body.appendChild(el);
-  // 5 saniyə sonra özü bağlansın
-  setTimeout(() => el?.remove(), 5000);
-  
-  // Toast da göstər
-  toast(title + ': ' + body, 'success');
-}
 
 
 
