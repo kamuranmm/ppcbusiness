@@ -500,6 +500,26 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
       <!-- PROFİL -->
       <div id="page-profile" class="page">
+        <!-- Telegram qoşulma kartı — üstdə -->
+        <div class="card" id="tg-card" style="margin-bottom:12px;border:2px solid #2B74D4">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="font-size:24px">✈️</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:#2B74D4">Telegram Bildirişi</div>
+            </div>
+          </div>
+          <div id="tg-status" style="margin-bottom:10px"></div>
+          <div id="tg-connect-btn-wrap">
+            <button onclick="connectTelegram()"
+              style="width:100%;padding:12px;background:#2B74D4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+              <span>✈️</span> Telegram-a qoş
+            </button>
+            <div style="font-size:11px;color:var(--text3);margin-top:6px;text-align:center">
+              Klikləyin → Telegram açılır → /start yazın → Avtomatik qoşulur
+            </div>
+          </div>
+        </div>
+
         <div class="card" style="margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:18px">
             <div id="prof-av" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;flex-shrink:0"></div>
@@ -524,23 +544,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             <div id="prof-cats"></div>
           </div>
         </div>
-        <!-- Telegram -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-hdr"><span class="card-title">📱 Telegram Bildirişi</span></div>
-        <div id="tg-status" style="margin-bottom:12px"></div>
-        <div id="tg-connect-btn-wrap">
-          <button onclick="connectTelegram()" 
-            style="width:100%;padding:12px;background:#2B74D4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px">
-            <span style="font-size:20px">✈️</span>
-            Telegram-a qoş
-          </button>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">
-            Düyməyə basın → Telegram açılır → /start yazın → Avtomatik qoşulur
-          </div>
-        </div>
-      </div>
-
-      <div class="card" id="prof-risk-warn" style="display:none;border:1.5px solid #FCA5A5;background:#FEF2F2">
+        <div class="card" id="prof-risk-warn" style="display:none;border:1.5px solid #FCA5A5;background:#FEF2F2">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="font-size:24px">⚠️</div>
             <div>
@@ -1016,6 +1020,52 @@ function enterApp() {
   goPage('overview', document.querySelector('.nav-item'));
   setTimeout(() => { addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
   setTimeout(() => { askNotifPermission(); }, 2000);
+  setTimeout(() => { checkTgConnected(); }, 1000);
+}
+
+// Telegram qoşulmayıbsa mobil banner göstər
+async function checkTgConnected() {
+  if(!db || !ME?.id) return;
+  try {
+    const snap = await get(ref(db, 'tg_ids/' + ME.id));
+    if(snap.val()?.chatId) return; // Artıq qoşulub
+
+    // Qoşulmayıb — kiçik banner göstər
+    const old = document.getElementById('tg-float-banner');
+    if(old) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'tg-float-banner';
+    banner.style.cssText = `
+      position:fixed;top:60px;left:50%;transform:translateX(-50%);
+      z-index:200;background:#2B74D4;color:#fff;
+      padding:10px 16px;border-radius:20px;
+      display:flex;align-items:center;gap:10px;
+      box-shadow:0 4px 16px rgba(43,116,212,.4);
+      cursor:pointer;white-space:nowrap;
+      font-size:13px;font-weight:600;
+      animation:slideBanner .4s ease;
+    `;
+    banner.innerHTML = `✈️ Telegram-a qoş — bildiriş al
+      <button onclick="document.getElementById('tg-float-banner').remove()"
+        style="background:rgba(255,255,255,.2);border:none;color:#fff;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:12px;padding:0;line-height:20px">×</button>`;
+    banner.onclick = (e) => {
+      if(e.target.tagName === 'BUTTON') return;
+      banner.remove();
+      goPage('profile', document.querySelector('.nav-item[onclick*="profile"]'));
+      setTimeout(() => connectTelegram(), 300);
+    };
+
+    if(!document.getElementById('tg-anim-style')) {
+      const s = document.createElement('style');
+      s.id = 'tg-anim-style';
+      s.textContent = `@keyframes slideBanner{from{opacity:0;top:50px}to{opacity:1;top:60px}}`;
+      document.head.appendChild(s);
+    }
+    document.body.appendChild(banner);
+    // 8 saniyə sonra özü bağlansın
+    setTimeout(() => banner?.remove(), 8000);
+  } catch(e) {}
 }
 
 function askNotifPermission() {
