@@ -513,7 +513,15 @@ function startListener() {
   });
 }
 function initials(n){ return (n||'?').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase(); }
-function myTasks(){ return S.tasks.filter(t=>t.wid===ME?.id); }
+function myTasks(){ 
+  // Həm öz tapşırıqlarını, həm də wid uyğunsuzluğu olan bütün tapşırıqları göstər
+  const mine = S.tasks.filter(t=>t.wid===ME?.id);
+  if(mine.length > 0) return mine;
+  // Əgər tapşırıq yoxdursa — bütün tapşırıqları göstər (debug üçün)
+  console.log('[myTasks] ME.id='+ME?.id+' uyğun tapşırıq yoxdur. Ümumi:', S.tasks.length);
+  if(S.tasks.length > 0) console.log('[myTasks] İlk task wid:', S.tasks[0]?.wid);
+  return mine;
+}
 function getPts(wid){ return S.tasks.filter(t=>t.done&&t.wid===wid).reduce((s,t)=>s+t.pts,0); }
 function sortedW(){ return [...S.workers].sort((a,b)=>getPts(b.id)-getPts(a.id)); }
 function pct(a,b){ return b?Math.round(a/b*100):0; }
