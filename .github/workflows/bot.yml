@@ -2,123 +2,84 @@ name: PPC Telegram Bot
 
 on:
   schedule:
-    - cron: '*/1 * * * *'  # Hər dəqiqə işlə
+    - cron: '*/2 * * * *'
   workflow_dispatch:
 
 jobs:
   bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Bot polling
+      - name: Process messages
         run: |
-          node -e "
+          node << 'EOF'
           const https = require('https');
-          const BOT_TOKEN = '${{ secrets.TG_BOT_TOKEN }}';
-          
-          function tgRequest(method, params) {
-            return new Promise((res, rej) => {
-              const body = JSON.stringify(params);
-              const req = https.request({
-                hostname: 'api.telegram.org',
-                path: '/bot' + BOT_TOKEN + '/' + method,
-                method: 'POST',
-                headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
-              }, r => {
-                let d = '';
-                r.on('data', c => d += c);
-                r.on('end', () => res(JSON.parse(d)));
-              });
-              req.on('error', rej);
-              req.write(body);
-              req.end();
-            });
-          }
+          const BOT = '${{ secrets.TG_BOT_TOKEN }}';
+          const DB  = 'business-iddare-etme-sistemi-default-rtdb.firebaseio.com';
 
-          async function fbGet(path) {
-            return new Promise((res, rej) => {
-              const DB = 'business-iddare-etme-sistemi-default-rtdb.firebaseio.com';
-              const req = https.request({
-                hostname: DB,
-                path: '/' + path + '.json',
-                method: 'GET'
-              }, r => {
-                let d = '';
-                r.on('data', c => d += c);
-                r.on('end', () => res(JSON.parse(d)));
-              });
-              req.on('error', () => res(null));
-              req.end();
-            });
-          }
+          const tg = (method, params) => new Promise((res,rej) => {
+            const body = JSON.stringify(params);
+            const req = https.request({
+              hostname:'api.telegram.org', path:'/bot'+BOT+'/'+method,
+              method:'POST', headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+            }, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>res(JSON.parse(d))); });
+            req.on('error',rej); req.write(body); req.end();
+          });
 
-          async function fbSet(path, data) {
-            return new Promise((res, rej) => {
-              const DB = 'business-iddare-etme-sistemi-default-rtdb.firebaseio.com';
-              const body = JSON.stringify(data);
-              const req = https.request({
-                hostname: DB,
-                path: '/' + path + '.json',
-                method: 'PUT',
-                headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
-              }, r => {
-                let d = '';
-                r.on('data', c => d += c);
-                r.on('end', () => res(JSON.parse(d)));
-              });
-              req.on('error', rej);
-              req.write(body);
-              req.end();
-            });
-          }
+          const fbGet = path => new Promise((res) => {
+            const req = https.request({hostname:DB, path:'/'+path+'.json', method:'GET'},
+              r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>{ try{res(JSON.parse(d));}catch(e){res(null);} }); });
+            req.on('error',()=>res(null)); req.end();
+          });
+
+          const fbSet = (path, data) => new Promise((res,rej) => {
+            const body = JSON.stringify(data);
+            const req = https.request({
+              hostname:DB, path:'/'+path+'.json', method:'PUT',
+              headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+            }, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>res(JSON.parse(d))); });
+            req.on('error',rej); req.write(body); req.end();
+          });
 
           (async () => {
-            // Son offset oxu
             const lastOffset = await fbGet('tg_bot/last_offset') || 0;
-            
-            // Yeni mesajları al
-            const updates = await tgRequest('getUpdates', {
-              offset: lastOffset + 1,
-              timeout: 5
-            });
+            const updates = await tg('getUpdates', {offset: lastOffset+1, timeout:3});
+            if(!updates.ok || !updates.result.length) { console.log('No updates'); return; }
 
-            if (!updates.ok || !updates.result.length) {
-              console.log('Yeni mesaj yoxdur');
-              return;
-            }
-
-            for (const update of updates.result) {
-              const msg = update.message;
-              if (!msg) continue;
-              
+            for(const upd of updates.result) {
+              const msg = upd.message;
+              if(!msg) continue;
               const chatId = msg.chat.id;
               const text = msg.text || '';
-              const firstName = msg.from.first_name || '';
 
-              console.log('Mesaj:', chatId, text);
+              if(text.startsWith('/start')) {
+                const parts = text.split(' ');
+                const param = parts[1] || ''; // worker_ID parametri
 
-              if (text === '/start' || text.startsWith('/start')) {
-                // Chat ID-ni göstər
-                await tgRequest('sendMessage', {
-                  chat_id: chatId,
-                  text: '👋 Salam ' + firstName + '!\n\n' +
-                        '🔑 Sizin Telegram ID-niz:\n\n' +
-                        '<code>' + chatId + '</code>\n\n' +
-                        '📋 Bu rəqəmi kopyalayıb PPC İşçi Portalında ' +
-                        '"Profil" bölməsinə daxil edin.',
-                  parse_mode: 'HTML'
-                });
+                let replyText = '👋 Salam!\n\n🔑 Sizin Telegram ID:\n<code>'+chatId+'</code>\n\nPPC İşçi Portalında Profil bölməsinə daxil edin.';
 
-                // Firebase-ə yaz — işçi portalı oxusun
-                await fbSet('tg_pending/' + chatId, {
-                  chatId: chatId,
-                  name: firstName + ' ' + (msg.from.last_name || ''),
-                  username: msg.from.username || '',
-                  ts: Date.now()
-                });
+                if(param.startsWith('worker_')) {
+                  const workerId = param.replace('worker_','');
+                  // Firebase-ə işçi ID-si ilə yaz
+                  await fbSet('tg_pending/'+chatId, {
+                    chatId: String(chatId),
+                    workerId: workerId,
+                    name: msg.from.first_name+' '+(msg.from.last_name||''),
+                    ts: Date.now()
+                  });
+                  // tg_ids-ə də birbaşa yaz
+                  await fbSet('tg_ids/'+workerId, {
+                    chatId: String(chatId),
+                    name: msg.from.first_name+' '+(msg.from.last_name||''),
+                    workerId: workerId,
+                    ts: Date.now()
+                  });
+                  replyText = '✅ Uğurla qoşuldunuz!\n\nArtıq yeni tapşırıqlarda Telegram bildirişi alacaqsınız. 🎉';
+                }
+
+                await tg('sendMessage', {chat_id:chatId, text:replyText, parse_mode:'HTML'});
               }
 
-              // Offset yenilə
-              await fbSet('tg_bot/last_offset', update.update_id);
+              await fbSet('tg_bot/last_offset', upd.update_id);
             }
           })();
-          "
+          EOF
