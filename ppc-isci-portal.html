@@ -400,6 +400,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a4 4 0 014-4h8a4 4 0 014 4v2"/></svg>
         Profilim
       </button>
+      <a id="tg-nav-link" href="https://t.me/Ppcbusiness_bot" target="_blank"
+        class="nav-item" style="text-decoration:none;color:inherit">
+        <svg class="nav-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.94z"/></svg>
+        Telegram
+      </a>
 
     </nav>
 
@@ -963,6 +968,8 @@ function enterApp() {
   updateSidebar();
   goPage('overview', document.querySelector('.nav-item'));
   setTimeout(() => { addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
+  const tgLink = document.getElementById('tg-nav-link');
+  if(tgLink && ME?.id) tgLink.href = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
 }
 
 window.doLogout = async function() {
