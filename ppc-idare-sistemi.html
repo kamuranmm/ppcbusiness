@@ -1251,8 +1251,8 @@ function saveState() {
   // Hər kolleksiyanı ayrıca yaz — bir birinə toxunmasın
   if(!db) return;
   const ops = [
-    set(ref(db,'ppcdata/tasks'),      S.tasks      || []),
-    set(ref(db,'ppcdata/workers'),    S.workers    || []),
+    (()=>{ const obj={}; (S.tasks||[]).forEach(t=>{if(t?.id)obj[t.id]=t;}); return set(ref(db,'ppcdata/tasks'), obj); })(),
+    (()=>{ const obj={}; (S.workers||[]).forEach(w=>{if(w?.id)obj[w.id]=w;}); return set(ref(db,'ppcdata/workers'), obj); })(),
     set(ref(db,'ppcdata/funnel'),     S.funnel     || {}),
     set(ref(db,'ppcdata/adSources'),  S.adSources  || []),
     set(ref(db,'ppcdata/pasientler'), S.pasientler || []),
@@ -1265,14 +1265,22 @@ function saveState() {
   Promise.all(ops).catch(e=>console.error('Firebase yazma xətası:',e));
 }
 
-// Yalnız tapşırıqları sürətli yaz (tez-tez dəyişir)
+// Yalnız tapşırıqları sürətli yaz
 function saveTasksOnly() {
-  if(!db) return;
-  set(ref(db,'ppcdata/tasks'), S.tasks || [])
+  if(!db || !S.tasks) return;
+  // Array əvəzinə object kimi yaz — id key olsun
+  const tasksObj = {};
+  S.tasks.forEach(t => { if(t?.id) tasksObj[t.id] = t; });
+  set(ref(db,'ppcdata/tasks'), tasksObj)
     .catch(e=>console.error('Tasks yazma xətası:',e));
 }
 // Array çevirici — Firebase bəzən array-ı object-ə çevirir
-const toArr = v => !v ? [] : Array.isArray(v) ? v : Object.values(v);
+const toArr = v => {
+  if(!v) return [];
+  if(Array.isArray(v)) return v;
+  // Firebase object-dən array-a çevir
+  return Object.values(v).filter(x => x && typeof x === 'object');
+};
 
 function loadState() {
   if(!db){ seedData(); refreshAll(); return; }
