@@ -400,6 +400,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a4 4 0 014-4h8a4 4 0 014 4v2"/></svg>
         Profilim
       </button>
+      <a id="tg-nav-link" href="https://t.me/Ppcbusiness_bot?start=connect" target="_blank"
+        class="nav-item" style="text-decoration:none;color:rgba(255,255,255,.5)">
+        <svg class="nav-ic" viewBox="0 0 24 24" fill="currentColor" style="opacity:.7"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.94z"/></svg>
+        Telegram
+      </a>
     </nav>
 
     <div class="sidebar-profile">
@@ -500,25 +505,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
       <!-- PROFİL -->
       <div id="page-profile" class="page">
-        <!-- Telegram qoşulma kartı — üstdə -->
-        <div class="card" id="tg-card" style="margin-bottom:12px;border:2px solid #2B74D4">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <div style="font-size:24px">✈️</div>
-            <div style="flex:1">
-              <div style="font-size:13px;font-weight:700;color:#2B74D4">Telegram Bildirişi</div>
-            </div>
-          </div>
-          <div id="tg-status" style="margin-bottom:10px"></div>
-          <div id="tg-connect-btn-wrap">
-            <button onclick="connectTelegram()"
-              style="width:100%;padding:12px;background:#2B74D4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
-              <span>✈️</span> Telegram-a qoş
-            </button>
-            <div style="font-size:11px;color:var(--text3);margin-top:6px;text-align:center">
-              Klikləyin → Telegram açılır → /start yazın → Avtomatik qoşulur
-            </div>
-          </div>
-        </div>
+
 
         <div class="card" style="margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:18px">
@@ -900,9 +887,10 @@ async function registerFCMToken() {
   try {
     const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
     const messaging = getMessaging();
+    const swReg = await navigator.serviceWorker.ready;
     const token = await getToken(messaging, {
       vapidKey: 'BDUwz3e8ZBePatW2Kr6PdXQZUCpCdnO3kP4ivAT3jGwNjiJP245tdBykkRUbQH6_2NfoQs2ZTDw2cCzF7Fs_95I',
-      serviceWorkerRegistration: await navigator.serviceWorker.ready
+      serviceWorkerRegistration: swReg
     });
     if(token && ME && db){
       // Token-i Firebase-ə yaz — Cloud Function oxuyacaq
@@ -1019,54 +1007,11 @@ function enterApp() {
   updateSidebar();
   goPage('overview', document.querySelector('.nav-item'));
   setTimeout(() => { addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
+  // Telegram linkini işçi ID ilə yenilə
+  const tgLink = document.getElementById('tg-nav-link');
+  if(tgLink && ME?.id) tgLink.href = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
   setTimeout(() => { askNotifPermission(); }, 2000);
-  setTimeout(() => { checkTgConnected(); }, 1000);
-}
 
-// Telegram qoşulmayıbsa mobil banner göstər
-async function checkTgConnected() {
-  if(!db || !ME?.id) return;
-  try {
-    const snap = await get(ref(db, 'tg_ids/' + ME.id));
-    if(snap.val()?.chatId) return; // Artıq qoşulub
-
-    // Qoşulmayıb — kiçik banner göstər
-    const old = document.getElementById('tg-float-banner');
-    if(old) return;
-
-    const banner = document.createElement('div');
-    banner.id = 'tg-float-banner';
-    banner.style.cssText = `
-      position:fixed;top:60px;left:50%;transform:translateX(-50%);
-      z-index:200;background:#2B74D4;color:#fff;
-      padding:10px 16px;border-radius:20px;
-      display:flex;align-items:center;gap:10px;
-      box-shadow:0 4px 16px rgba(43,116,212,.4);
-      cursor:pointer;white-space:nowrap;
-      font-size:13px;font-weight:600;
-      animation:slideBanner .4s ease;
-    `;
-    banner.innerHTML = `✈️ Telegram-a qoş — bildiriş al
-      <button onclick="document.getElementById('tg-float-banner').remove()"
-        style="background:rgba(255,255,255,.2);border:none;color:#fff;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:12px;padding:0;line-height:20px">×</button>`;
-    banner.onclick = (e) => {
-      if(e.target.tagName === 'BUTTON') return;
-      banner.remove();
-      goPage('profile', document.querySelector('.nav-item[onclick*="profile"]'));
-      setTimeout(() => connectTelegram(), 300);
-    };
-
-    if(!document.getElementById('tg-anim-style')) {
-      const s = document.createElement('style');
-      s.id = 'tg-anim-style';
-      s.textContent = `@keyframes slideBanner{from{opacity:0;top:50px}to{opacity:1;top:60px}}`;
-      document.head.appendChild(s);
-    }
-    document.body.appendChild(banner);
-    // 8 saniyə sonra özü bağlansın
-    setTimeout(() => banner?.remove(), 8000);
-  } catch(e) {}
-}
 
 function askNotifPermission() {
   if(!('Notification' in window)) return;
@@ -1513,42 +1458,8 @@ function showInAppNotif(title, body) {
 
 // ── TELEGRAM QOŞULMA ─────────────────────────────────────────────────────────
 window.connectTelegram = function() {
-  // Teleqram-ı aç, /start yaz
-  // Bot özü Chat ID-ni Firebase-ə yazacaq, biz polling edəcəyik
   const botUrl = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
   window.open(botUrl, '_blank');
-  
-  // Düyməni dəyiş
-  const wrap = document.getElementById('tg-connect-btn-wrap');
-  if(wrap) wrap.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text3);font-size:12px">⏳ Telegram-da /start yazdıqdan sonra avtomatik qoşulacaq...</div>';
-  
-  // Firebase-i dinlə — bot chat ID-ni yazanda bildiriş ver
-  const pollRef = ref(db, 'tg_pending');
-  const unsubscribe = onValue(pollRef, snap => {
-    const data = snap.val() || {};
-    // Bizim işçiyə uyğun pending tapşırıq varmı?
-    // Bot Firebase-ə worker_ID ilə yazır
-    const match = Object.values(data).find(x => 
-      x.workerId === ME.id || 
-      (x.ts && Date.now() - x.ts < 120000) // Son 2 dəqiqədə
-    );
-    if(match?.chatId) {
-      // Chat ID tapıldı — Firebase-ə yaz
-      set(ref(db, 'tg_ids/' + ME.id), {
-        chatId: String(match.chatId),
-        name: ME.name,
-        workerId: ME.id,
-        ts: Date.now()
-      }).then(() => {
-        unsubscribe();
-        loadTgStatus();
-        toast('Telegram uğurla qoşuldu! ✅', 'success');
-      });
-    }
-  });
-  
-  // 2 dəqiqə sonra listener-i dayandır
-  setTimeout(() => unsubscribe(), 120000);
 };
 
 function loadTgStatus() {
