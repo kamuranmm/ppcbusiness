@@ -480,15 +480,34 @@ const DEMO_WORKERS = [
 function today(){ return new Date().toISOString().slice(0,10); }
 
 // ── FIREBASE LISTENER ─────────────────────────────────────────────────────────
+// Array/object çevirici
+const toArr = v => {
+  if(!v) return [];
+  if(Array.isArray(v)) return v;
+  return Object.values(v).filter(x => x && typeof x === 'object');
+};
+
 function startListener() {
   if(!db) return;
+
+  // Tapşırıqları tasks/ kökündən oxu (admin paneli ilə eyni yer)
+  onValue(ref(db,'ppcdata/tasks'), snap => {
+    const all = toArr(snap.val());
+    console.log('[Portal] Firebase tasks:', all.length, 'ümumi');
+    console.log('[Portal] ME.id:', ME?.id);
+    console.log('[Portal] Mənim tapşırıqlarım:', all.filter(t=>t.wid===ME?.id).length);
+    if(all.length > 0) console.log('[Portal] İlk tapşırıq wid:', all[0]?.wid);
+    S.tasks = all;
+    if(ME) { updateSidebar(); renderCurrentPage(); }
+  });
+
+  // Digər məlumatları ppcdata/-dən oxu
   onValue(ref(db,'ppcdata'), snap => {
     const d = snap.val();
     if(d) {
-      if(d.workers?.length)  S.workers   = d.workers;
-      if(d.tasks?.length)    S.tasks     = d.tasks;
-      if(d.hedefler?.length) S.hedefler  = d.hedefler;
-      if(d.rehberler?.length)S.rehberler = d.rehberler;
+      if(d.workers)  S.workers   = toArr(d.workers);
+      if(d.hedefler) S.hedefler  = toArr(d.hedefler);
+      if(d.rehberler)S.rehberler = toArr(d.rehberler);
     }
     if(ME) { updateSidebar(); renderCurrentPage(); }
   });
@@ -779,7 +798,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     const snap = await get(ref(db, 'ppcdata'));
     const d = snap.val() || {};
     if (d.workers?.length)  S.workers   = d.workers;
-    if (d.tasks?.length)    S.tasks     = d.tasks;
+    // tasks ayrıca tasks/ kökündən startListener ilə oxunur
     if (d.hedefler?.length) S.hedefler  = d.hedefler;
     if (d.rehberler?.length)S.rehberler = d.rehberler;
   } catch(e) {}
@@ -1006,7 +1025,8 @@ function renderTasks(f){
 window.toggleTask=function(id){
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
   t.done=!t.done;
-  saveTaskToFirebase();
+  // tasks/ kökündə yenilə
+  if(db) update(ref(db,'ppcdata/tasks/'+id), {done:t.done}).catch(()=>{});
   updateSidebar(); renderCurrentPage();
   toast(t.done?`+${t.pts} xal qazandınız! 🎉`:'Tapşırıq açıldı', t.done?'success':'');
 };
