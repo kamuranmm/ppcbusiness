@@ -491,23 +491,45 @@ function startListener() {
   if(!db) return;
 
   // Tapşırıqları tasks/ kökündən oxu (admin paneli ilə eyni yer)
+  let _prevTaskIds = null;
+
   onValue(ref(db,'ppcdata/tasks'), snap => {
     const all = toArr(snap.val());
-    console.log('[Portal] Firebase tasks:', all.length, 'ümumi');
-    console.log('[Portal] ME.id:', ME?.id);
-    console.log('[Portal] Mənim tapşırıqlarım:', all.filter(t=>t.wid===ME?.id).length);
-    if(all.length > 0) console.log('[Portal] İlk tapşırıq wid:', all[0]?.wid);
+    
+    // Yeni tapşırıq gəldimi yoxla
+    if(_prevTaskIds !== null) {
+      const myNew = all.filter(t => 
+        t.wid === ME?.id && 
+        !_prevTaskIds.has(t.id)
+      );
+      // Hər yeni tapşırıq üçün bildiriş göstər
+      myNew.forEach(t => {
+        showInAppNotif('📋 Yeni Tapşırıq', t.name + ' · +' + t.pts + ' xal');
+        // Brauzer bildirişi (portal bağlıdırsa)
+        if(document.hidden && Notification.permission === 'granted') {
+          new Notification('📋 Yeni Tapşırıq', {
+            body: t.name + ' · +' + t.pts + ' xal',
+            icon: 'ppc-icon-192.png',
+            badge: 'ppc-badge-72.png',
+            vibrate: [200, 100, 200]
+          });
+        }
+      });
+    }
+    _prevTaskIds = new Set(all.map(t => t.id));
+    
     S.tasks = all;
     if(ME) { updateSidebar(); renderCurrentPage(); }
   });
 
-  // Digər məlumatları ppcdata/-dən oxu
+  // Digər məlumatları ppcdata/-dən oxu (tasks-a toxunma!)
   onValue(ref(db,'ppcdata'), snap => {
     const d = snap.val();
     if(d) {
       if(d.workers)  S.workers   = toArr(d.workers);
       if(d.hedefler) S.hedefler  = toArr(d.hedefler);
       if(d.rehberler)S.rehberler = toArr(d.rehberler);
+      // tasks-ı ayrıca listener oxuyur — burda toxunma
     }
     if(ME) { updateSidebar(); renderCurrentPage(); }
   });
@@ -826,8 +848,9 @@ onAuthStateChanged(auth, async (firebaseUser) => {
         m.status === 'approved' && m.username + '@ppc.az' === email
       );
       if (approved) {
-        w = S.workers.find(x => x.id === approved.workerId) || {
-          id:       approved.workerId || 'w_' + approved.id,
+        const wid = approved.workerId || ('w_mur_'+(approved.id||'').replace('mur_',''));
+        w = S.workers.find(x => x.id === wid) || {
+          id:       wid,
           name:     approved.ad + ' ' + approved.soyad,
           role:     approved.vezife,
           dept:     approved.vezife,
@@ -1225,6 +1248,55 @@ function renderProfile(){
     riskWarn.style.display='block';
     document.getElementById('prof-risk-txt').textContent=`Aylıq ${RISK_LIMIT} xal limitinin altındasınız (${pts} xal). Daha çox tapşırıq tamamlayaraq performansınızı artırın. Çatışmayan: ${RISK_LIMIT-pts} xal.`;
   } else { riskWarn.style.display='none'; }
+}
+
+// ── IN-APP BİLDİRİŞ ──────────────────────────────────────────────────────────
+function showInAppNotif(title, body) {
+  // Köhnə varsa sil
+  const old = document.getElementById('inapp-notif');
+  if(old) old.remove();
+
+  const el = document.createElement('div');
+  el.id = 'inapp-notif';
+  el.style.cssText = `
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    z-index:9999;background:#1B3A6B;color:#fff;
+    padding:14px 20px;border-radius:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,.3);
+    display:flex;align-items:center;gap:12px;
+    min-width:280px;max-width:90vw;
+    animation:slideDown .3s ease;
+  `;
+  el.innerHTML = `
+    <div style="font-size:22px">📋</div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700">${title}</div>
+      <div style="font-size:12px;opacity:.8;margin-top:2px">${body}</div>
+    </div>
+    <button onclick="this.parentElement.remove()" 
+      style="background:rgba(255,255,255,.2);border:none;color:#fff;
+      width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px">×</button>
+  `;
+
+  // Animasiya CSS
+  if(!document.getElementById('notif-style')){
+    const style = document.createElement('style');
+    style.id = 'notif-style';
+    style.textContent = `
+      @keyframes slideDown {
+        from { opacity:0; transform:translateX(-50%) translateY(-20px); }
+        to   { opacity:1; transform:translateX(-50%) translateY(0); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(el);
+  // 5 saniyə sonra özü bağlansın
+  setTimeout(() => el?.remove(), 5000);
+  
+  // Toast da göstər
+  toast(title + ': ' + body, 'success');
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
