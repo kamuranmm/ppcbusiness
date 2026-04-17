@@ -1285,63 +1285,30 @@ const toArr = v => {
 function loadState() {
   if(!db){ seedData(); refreshAll(); return; }
 
-  // Firebase-dən BİR DƏFƏ oxu
-  get(ref(db,'ppcdata/tasks')).then(snap=>{
-    const tasks = snap.val();
-
-    if(tasks && (Array.isArray(tasks) ? tasks.length > 0 : Object.keys(tasks).length > 0)){
-      // Firebase-də real tapşırıq var — bütün məlumatları oxu
-      get(ref(db,'ppcdata')).then(fullSnap=>{
-        const d = fullSnap.val();
-        if(d){
-          S.workers      = toArr(d.workers);
-          S.tasks        = toArr(d.tasks);
-          S.pasientler   = toArr(d.pasientler);
-          S.rehberler    = toArr(d.rehberler);
-          S.hedefler     = toArr(d.hedefler);
-          S.vakansiyalar = toArr(d.vakansiyalar);
-          S.yeniGelenler = toArr(d.yeniGelenler);
-          if(d.funnel)    S.funnel    = d.funnel;
-          if(d.adSources) S.adSources = d.adSources;
-        }
-        refreshAll();
-        // Real-time listener qur (dəyişiklikləri izlə)
-        startRealtimeListener();
-      });
-    } else {
-      // Firebase boşdur — seed data yüklə, bir dəfə yaz
-      seedData();
-      saveState();
-      refreshAll();
-      startRealtimeListener();
-    }
-  }).catch(()=>{
-    // Bağlantı yoxdur — seed data
-    seedData(); refreshAll();
-  });
-}
-
-let realtimeListenerStarted = false;
-function startRealtimeListener(){
-  if(realtimeListenerStarted) return;
-  realtimeListenerStarted = true;
+  // Firebase real-time listener — bir dəfə qur, daima sinxron qal
   onValue(ref(db,'ppcdata'), snap=>{
     const d = snap.val();
-    if(!d) return;
-    // Yalnız Firebase-dən gəlmiş real məlumatları qəbul et
-    const t = toArr(d.tasks);
-    if(t.length > 0 || S.tasks.length === 0){
-      S.tasks = t;
+
+    if(d && d.tasks && Object.keys(d.tasks).length > 0){
+      // Firebase-də real məlumat var — götür
+      S.tasks        = toArr(d.tasks);
+      S.workers      = toArr(d.workers);
+      S.pasientler   = toArr(d.pasientler);
+      S.rehberler    = toArr(d.rehberler);
+      S.hedefler     = toArr(d.hedefler);
+      S.vakansiyalar = toArr(d.vakansiyalar);
+      S.yeniGelenler = toArr(d.yeniGelenler);
+      if(d.funnel)    S.funnel    = d.funnel;
+      if(d.adSources) S.adSources = d.adSources;
+    } else if(!d || !d.workers) {
+      // Firebase tamamilə boşdur — seed yüklə
+      seedData();
+      saveState();
     }
-    const w = toArr(d.workers);
-    if(w.length > 0) S.workers = w;
-    S.pasientler   = toArr(d.pasientler);
-    S.rehberler    = toArr(d.rehberler);
-    S.hedefler     = toArr(d.hedefler);
-    S.vakansiyalar = toArr(d.vakansiyalar);
-    S.yeniGelenler = toArr(d.yeniGelenler);
-    if(d.funnel)    S.funnel    = d.funnel;
-    if(d.adSources) S.adSources = d.adSources;
+    // workers varsa götür (tasks olmasa belə)
+    if(d && d.workers && Object.keys(d.workers||{}).length > 0){
+      S.workers = toArr(d.workers);
+    }
     refreshAll();
   });
 }
