@@ -155,7 +155,108 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .kt-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
 
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-@media(max-width:1000px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
+/* ══ RESPONSIVE — MOBİL ══════════════════════════════════════════════════ */
+@media(max-width:1000px){
+  .g4{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:768px){
+  /* App layout */
+  .app{flex-direction:column}
+
+  /* Sidebar → Alt navbar */
+  .sidebar{
+    width:100%;height:auto;flex-direction:column;
+    position:fixed;bottom:0;left:0;right:0;top:auto;
+    z-index:50;border-top:1px solid rgba(255,255,255,.1);
+    box-shadow:0 -2px 20px rgba(0,0,0,.2)
+  }
+  .logo-area{display:none}
+  .nav{
+    display:flex;flex-direction:row;padding:6px 4px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    gap:2px;align-items:center
+  }
+  .nav-item{
+    flex-direction:column;align-items:center;justify-content:center;
+    padding:6px 10px;min-width:60px;border-radius:10px;
+    font-size:9.5px;gap:3px;flex-shrink:0
+  }
+  .nav-item.active::before{display:none}
+  .nav-item.active{background:rgba(30,95,173,.5)}
+  .nav-ic{width:18px;height:18px;opacity:1}
+  .nav-badge{position:absolute;top:2px;right:2px;font-size:8px;padding:1px 4px;min-width:14px}
+  .nav-item{position:relative}
+  .sidebar-profile{display:none}
+
+  /* Main */
+  .main{flex:1;overflow-y:auto;padding-bottom:72px;margin-bottom:0}
+
+  /* Topbar */
+  .topbar{padding:0 12px;height:50px}
+  .tb-title{font-size:14px;font-weight:700}
+  #tb-greeting{display:none}
+  #tb-right{gap:6px}
+
+  /* Content */
+  .content{padding:10px}
+
+  /* Grids */
+  .g4{grid-template-columns:1fr 1fr;gap:8px}
+  .g3{grid-template-columns:1fr 1fr;gap:8px}
+  .g2{grid-template-columns:1fr;gap:10px}
+
+  /* Metric cards */
+  .mc{padding:10px 12px;border-radius:10px}
+  .mc-val{font-size:20px}
+  .mc-label{font-size:9px}
+  .mc-sub{font-size:10px}
+  .mc-icon{font-size:18px;right:8px;top:8px}
+
+  /* Cards */
+  .card{padding:12px;border-radius:10px;margin-bottom:10px}
+  .card-title{font-size:12.5px}
+  .card-hdr{margin-bottom:10px}
+
+  /* Profile */
+  #prof-av{width:52px !important;height:52px !important;font-size:18px !important}
+
+  /* Tabs */
+  .tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:100%}
+  .tab-btn{white-space:nowrap;flex-shrink:0;padding:5px 11px;font-size:11px}
+
+  /* Task rows */
+  .task-row{padding:8px 4px}
+  .task-name{font-size:12px}
+
+  /* Buttons */
+  .btn{padding:7px 12px;font-size:11.5px}
+  .btn-sm{padding:4px 8px;font-size:10.5px}
+
+  /* Ring */
+  .ring-wrap{margin:4px 0 8px}
+}
+
+@media(max-width:480px){
+  .g4{grid-template-columns:1fr 1fr;gap:6px}
+  .mc-val{font-size:18px}
+  .mc{padding:9px 10px}
+  .content{padding:8px}
+  .topbar{padding:0 10px;height:48px}
+  .card{padding:10px;border-radius:9px}
+  .tb-title{font-size:13px}
+  .nav-item{min-width:52px;padding:5px 8px;font-size:9px}
+  .nav-ic{width:16px;height:16px}
+}
+
+/* Login ekranı mobil */
+@media(max-width:480px){
+  .login-wrap{padding:0 12px}
+  .login-box{padding:24px 16px;border-radius:16px}
+  .login-logo-name{font-size:17px}
+  #panel-reg{padding:20px 16px}
+}
 </style>
 <link rel="manifest" href="manifest-isci.json">
 <meta name="theme-color" content="#1B3A6B">
