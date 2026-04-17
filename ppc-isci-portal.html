@@ -1385,18 +1385,18 @@ function renderProfile(){
 
   // Category pts
   const cats=[...new Set(mt.map(t=>t.cat))];
-  document.getElementById('prof-cats').innerHTML=cats.map(c=>{
-    const ct=mt.filter(t=>t.cat===c);
-    const cp=ct.filter(t=>t.done).reduce((s,t)=>s+t.pts,0);
-    const cr=pct(ct.filter(t=>t.done).length,ct.length);
-    return `<div style="padding:7px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <div style="font-size:12px;color:var(--text2)">${c}</div>
-        <div style="font-size:13px;font-weight:700;color:${ME.color}">${cp} xal</div>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${cr}%;background:${ME.color}"></div></div>
-    </div>`;
-  }).join('')||'<div style="font-size:12px;color:var(--text3);padding:10px 0">Hələ məlumat yoxdur</div>';
+  document.getElementById('prof-cats').innerHTML = cats.map(c => {
+    const ct = mt.filter(t => t.cat===c);
+    const cp = ct.filter(t => t.done).reduce((s,t) => s+t.pts, 0);
+    const cr = pct(ct.filter(t => t.done).length, ct.length);
+    return '<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+      + '<div style="font-size:12px;color:var(--text2)">'+c+'</div>'
+      + '<div style="font-size:13px;font-weight:700;color:'+ME.color+'">'+cp+' xal</div>'
+      + '</div>'
+      + '<div class="prog-bar"><div class="prog-fill" style="width:'+cr+'%;background:'+ME.color+'"></div></div>'
+      + '</div>';
+  }).join('') || '<div style="font-size:12px;color:var(--text3);padding:10px 0">Hələ məlumat yoxdur</div>';
 
   // Risk xəbərdarlığı
   loadTgStatus(); // Telegram statusunu yüklə
