@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="az">
 <head>
@@ -1132,7 +1133,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, update, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -1247,109 +1248,95 @@ function seedData() {
 }
 
 // ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
-function saveState() {
-  lsSave(); // cache
-  if(!db) return;
-  const tObj = {}; (S.tasks||[]).forEach(t=>{if(t?.id) tObj[t.id]=t;});
-  const wObj = {}; (S.workers||[]).forEach(w=>{if(w?.id) wObj[w.id]=w;});
-  set(ref(db,'ppcdata'), {
-    tasks:        tObj,
-    workers:      wObj,
-    funnel:       S.funnel       || {},
-    adSources:    S.adSources    || [],
-    pasientler:   S.pasientler   || [],
-    rehberler:    S.rehberler    || [],
-    hedefler:     S.hedefler     || [],
-    vakansiyalar: S.vakansiyalar || [],
-    yeniGelenler: S.yeniGelenler || []
-  }).catch(()=>{});
-}
-
-// Yalnız tapşırıqları sürətli yaz
-function saveTasksOnly() {
-  lsSave();
-  if(!db) return;
-  const obj = {};
-  (S.tasks||[]).forEach(t=>{ if(t?.id) obj[t.id]=t; });
-  set(ref(db,'ppcdata/tasks'), obj).catch(()=>{});
-}
-// Array çevirici — Firebase bəzən array-ı object-ə çevirir
+// Array/object çevirici
 const toArr = v => {
   if(!v) return [];
   if(Array.isArray(v)) return v;
-  // Firebase object-dən array-a çevir
   return Object.values(v).filter(x => x && typeof x === 'object');
 };
 
+// ── TAPŞIRIQ ƏLAVƏ ET (Firebase-ə birbaşa) ───────────────────────────────────
+function fbAddTask(task) {
+  if(!db || !task?.id) return;
+  console.log('[Firebase] Task yazılır:', task.id, task.name);
+  set(ref(db, 'tasks/' + task.id), task)
+    .then(()=> console.log('[Firebase] Task yazıldı ✓', task.id))
+    .catch(e => console.error('[Firebase] XETA:', e.code, e.message));
+}
+
+// ── TAPŞIRIQI YENİLƏ (done/undone) ───────────────────────────────────────────
+function fbUpdateTask(taskId, updates) {
+  if(!db || !taskId) return;
+  update(ref(db, 'tasks/' + taskId), updates).catch(e => console.error('fbUpdateTask:', e));
+}
+
+// ── TAPŞIRIQI SİL ─────────────────────────────────────────────────────────────
+function fbDeleteTask(taskId) {
+  if(!db || !taskId) return;
+  remove(ref(db, 'tasks/' + taskId)).catch(e => console.error('fbDeleteTask:', e));
+}
+
+// ── DİGƏR MƏLUMATLARI SAXLA (workers, funnel, vs) ────────────────────────────
+function saveState() {
+  if(!db) return;
+  // Workers
+  const wObj = {};
+  (S.workers||[]).forEach(w => { if(w?.id) wObj[w.id] = w; });
+  set(ref(db, 'ppcdata/workers'), wObj).catch(()=>{});
+  // Digərləri
+  set(ref(db, 'ppcdata/funnel'),       S.funnel       || {}).catch(()=>{});
+  set(ref(db, 'ppcdata/adSources'),    S.adSources    || []).catch(()=>{});
+  set(ref(db, 'ppcdata/pasientler'),   S.pasientler   || []).catch(()=>{});
+  set(ref(db, 'ppcdata/rehberler'),    S.rehberler    || []).catch(()=>{});
+  set(ref(db, 'ppcdata/hedefler'),     S.hedefler     || []).catch(()=>{});
+  set(ref(db, 'ppcdata/vakansiyalar'), S.vakansiyalar || []).catch(()=>{});
+  set(ref(db, 'ppcdata/yeniGelenler'), S.yeniGelenler || []).catch(()=>{});
+}
+
+// saveTasksOnly artıq lazım deyil — fbUpdateTask istifadə edirik
+function saveTasksOnly() { /* artıq istifadə edilmir */ }
+
+// lsSave/lsLoad artıq lazım deyil
+function lsSave() {}
+function lsLoad() { return null; }
+
+// ── YÜKLƏ — Firebase real-time listener ──────────────────────────────────────
 function loadState() {
   if(!db){ seedData(); refreshAll(); return; }
 
-  // Firebase real-time — həmişə canlı sinxron
-  onValue(ref(db,'ppcdata'), snap=>{
-    const d = snap.val();
-
-    if(d && d.tasks && typeof d.tasks === 'object' && Object.keys(d.tasks).length > 0){
-      // Firebase-də tapşırıq var — götür, localStorage-ə yaz
-      S.tasks        = toArr(d.tasks);
-      S.workers      = toArr(d.workers);
-      S.pasientler   = toArr(d.pasientler);
-      S.rehberler    = toArr(d.rehberler);
-      S.hedefler     = toArr(d.hedefler);
-      S.vakansiyalar = toArr(d.vakansiyalar);
-      S.yeniGelenler = toArr(d.yeniGelenler);
-      if(d.funnel)    S.funnel    = d.funnel;
-      if(d.adSources) S.adSources = d.adSources;
-      lsSave(); // cache kimi saxla
-    } else {
-      // Firebase boş — localStorage-dən yüklə
-      const ls = lsLoad();
-      if(ls && ls.tasks && ls.tasks.length > 0){
-        S.tasks        = ls.tasks;
-        S.workers      = ls.workers      || S.workers;
-        S.funnel       = ls.funnel       || S.funnel;
-        S.adSources    = ls.adSources    || S.adSources;
-        S.pasientler   = ls.pasientler   || S.pasientler;
-        S.rehberler    = ls.rehberler    || S.rehberler;
-        S.hedefler     = ls.hedefler     || S.hedefler;
-        S.vakansiyalar = ls.vakansiyalar || S.vakansiyalar;
-        S.yeniGelenler = ls.yeniGelenler || S.yeniGelenler;
-        // localStorage məlumatını Firebase-ə yaz (sinxronlaşdır)
-        saveState();
-      } else if(!d) {
-        // Hər iki yer boş — seed data
-        seedData();
-        saveState();
-      }
-    }
+  // Tapşırıqları dinlə (tasks/ kökündən — ayrıca)
+  onValue(ref(db, 'tasks'), snap => {
+    const val = snap.val();
+    console.log('[Firebase] tasks:', val ? Object.keys(val).length : 0);
+    S.tasks = toArr(val);
     refreshAll();
   });
-}
 
-// localStorage əməliyyatları
-function lsSave(){
-  try{
-    localStorage.setItem('ppc_v3', JSON.stringify({
-      tasks:        S.tasks,
-      workers:      S.workers,
-      funnel:       S.funnel,
-      adSources:    S.adSources,
-      pasientler:   S.pasientler,
-      rehberler:    S.rehberler,
-      hedefler:     S.hedefler,
-      vakansiyalar: S.vakansiyalar,
-      yeniGelenler: S.yeniGelenler,
-      ts:           Date.now()
-    }));
-  }catch(e){}
-}
-
-function lsLoad(){
-  try{
-    const s = localStorage.getItem('ppc_v3');
-    if(!s) return null;
-    const d = JSON.parse(s);
-    return d;
-  }catch(e){ return null; }
+  // Digər məlumatları dinlə (ppcdata/)
+  onValue(ref(db, 'ppcdata'), snap => {
+    const d = snap.val();
+    // Workers yoxdursa — seed yüklə AMMa tasks-a TOXUNMA
+    if(!d || !d.workers) {
+      seedData(); // S.workers, S.funnel və s. doldur
+      // Workers-i Firebase-ə yaz
+      const wObj = {};
+      (S.workers||[]).forEach(w=>{ if(w?.id) wObj[w.id]=w; });
+      set(ref(db,'ppcdata/workers'), wObj).catch(()=>{});
+      set(ref(db,'ppcdata/funnel'), S.funnel||{}).catch(()=>{});
+      refreshAll();
+      return;
+    }
+    // Real məlumat var — yüklə
+    S.workers      = toArr(d.workers);
+    if(d.funnel)       S.funnel       = d.funnel;
+    if(d.adSources)    S.adSources    = toArr(d.adSources);
+    if(d.pasientler)   S.pasientler   = toArr(d.pasientler);
+    if(d.rehberler)    S.rehberler    = toArr(d.rehberler);
+    if(d.hedefler)     S.hedefler     = toArr(d.hedefler);
+    if(d.vakansiyalar) S.vakansiyalar = toArr(d.vakansiyalar);
+    if(d.yeniGelenler) S.yeniGelenler = toArr(d.yeniGelenler);
+    refreshAll();
+  });
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
@@ -1540,12 +1527,14 @@ function renderTasks(f) {
 window.toggleTask = function(id) {
   const t = S.tasks.find(x=>x.id===id); if(!t) return;
   t.done = !t.done;
-  saveState(); refreshAll();
+  fbUpdateTask(id, {done: t.done});
+  refreshAll();
   toast(t.done?`+${t.pts} xal qazanıldı! 🎉`:'Tapşırıq açıldı', t.done?'success':'');
 }
 window.deleteTask = function(id) {
+  fbDeleteTask(id);
   S.tasks = S.tasks.filter(x=>x.id!==id);
-  saveState(); renderTasks(taskFilterMode);
+  renderTasks(taskFilterMode);
   toast('Tapşırıq silindi');
 }
 
@@ -1903,7 +1892,7 @@ window.saveTask = function() {
     date:today()
   };
   S.tasks.push(newTask);
-  saveTasksOnly();
+  fbAddTask(newTask); // Firebase-ə birbaşa yaz
   closeModal('modal-task'); refreshAll();
   const assignerName = document.getElementById('sf-name')?.textContent || 'Admin';
   sendTaskNotification(newTask.wid, newTask.name, assignerName);
@@ -2296,7 +2285,7 @@ window.saveKuratorTask = function() {
   if(!wid||!name){toast('Bütün sahələri doldurun','error');return;}
   const r = S.rehberler.find(x=>x.id===rid);
   const leader = S.workers.find(x=>x.id===r?.wid);
-  S.tasks.push({
+  const kTask = {
     id:'t'+Date.now(), name, wid,
     cat:'Kuratorluq',
     pts:parseInt(document.getElementById('kt-pts').value),
@@ -2304,9 +2293,11 @@ window.saveKuratorTask = function() {
     deadline:document.getElementById('kt-deadline').value,
     done:false, note:'',
     date:today(),
-    fromLeader:r?.wid  // Kim verdi
-  });
-  saveTasksOnly(); closeModal('modal-kurator-task'); refreshAll(); renderRehberler();
+    fromLeader:r?.wid
+  };
+  S.tasks.push(kTask);
+  fbAddTask(kTask); // Firebase-ə birbaşa yaz
+  closeModal('modal-kurator-task'); refreshAll(); renderRehberler();
   const assignee=S.workers.find(x=>x.id===wid);
   sendTaskNotification(wid, name, leader?.name.split(' ')[0]||'Rəhbər');
   toast(`${leader?.name.split(' ')[0]||'?'} → ${assignee?.name.split(' ')[0]||'?'} tapşırıq verildi ✓`,'success');
@@ -3157,13 +3148,20 @@ function showApp(user) {
   }catch(e){}
   try{ if(db) set(ref(db,'sessions/admin/kamran'), {name:user.name, ts:Date.now(), active:true}).catch(()=>{}); }catch(e){}
 
-  document.getElementById('admin-login').style.display='none';
-  document.getElementById('app-wrap').style.display='flex';
-  document.getElementById('sf-av').textContent = user.name.slice(0,2).toUpperCase();
-  document.getElementById('sf-name').textContent = user.name;
-  document.getElementById('sf-role-el').textContent = user.role;
-  document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  loadState(); // seedData() yalnız Firebase boşdursa çağırılır
+  const adminLogin = document.getElementById('admin-login');
+  const appWrap    = document.getElementById('app-wrap');
+  if(adminLogin) adminLogin.style.display='none';
+  if(appWrap)    appWrap.style.display='flex';
+
+  const sfAv   = document.getElementById('sf-av');
+  const sfName = document.getElementById('sf-name');
+  const sfRole = document.getElementById('sf-role-el');
+  const tbDate = document.getElementById('tb-date');
+  if(sfAv)   sfAv.textContent   = (user.name||'KA').slice(0,2).toUpperCase();
+  if(sfName) sfName.textContent = user.name||'Admin';
+  if(sfRole) sfRole.textContent = user.role||'Admin';
+  if(tbDate) tbDate.textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  loadState();
 
   // GitHub token Firebase-dən avtomatik yüklə
   if(db) {
