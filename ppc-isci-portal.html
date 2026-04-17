@@ -491,33 +491,47 @@ function startListener() {
   if(!db) return;
 
   // Tapşırıqları tasks/ kökündən oxu (admin paneli ilə eyni yer)
-  let _prevTaskIds = null;
-
   onValue(ref(db,'ppcdata/tasks'), snap => {
     const all = toArr(snap.val());
-    
-    // Yeni tapşırıq gəldimi yoxla
-    if(_prevTaskIds !== null) {
-      const myNew = all.filter(t => 
-        t.wid === ME?.id && 
-        !_prevTaskIds.has(t.id)
+
+    // Bilinen task ID-lərini localStorage-dən yüklə
+    let knownIds;
+    try {
+      const saved = localStorage.getItem('ppc_known_tasks_' + ME?.id);
+      knownIds = saved ? new Set(JSON.parse(saved)) : null;
+    } catch(e) { knownIds = null; }
+
+    if(knownIds !== null) {
+      // Mənim yeni tapşırıqlarımı tap
+      const myNew = all.filter(t =>
+        t.wid === ME?.id &&
+        !t.done &&
+        !knownIds.has(t.id)
       );
-      // Hər yeni tapşırıq üçün bildiriş göstər
+
       myNew.forEach(t => {
+        // Ekranda bildiriş göstər
         showInAppNotif('📋 Yeni Tapşırıq', t.name + ' · +' + t.pts + ' xal');
-        // Brauzer bildirişi (portal bağlıdırsa)
-        if(document.hidden && Notification.permission === 'granted') {
-          new Notification('📋 Yeni Tapşırıq', {
+        // Telefon bildirişi
+        if(Notification.permission === 'granted') {
+          new Notification('📋 Yeni Tapşırıq — PPC', {
             body: t.name + ' · +' + t.pts + ' xal',
             icon: 'ppc-icon-192.png',
             badge: 'ppc-badge-72.png',
-            vibrate: [200, 100, 200]
+            vibrate: [200, 100, 200],
+            tag: t.id
           });
         }
       });
     }
-    _prevTaskIds = new Set(all.map(t => t.id));
-    
+
+    // Bütün tapşırıq ID-lərini yadda saxla
+    try {
+      localStorage.setItem('ppc_known_tasks_' + ME?.id,
+        JSON.stringify(all.map(t => t.id))
+      );
+    } catch(e) {}
+
     S.tasks = all;
     if(ME) { updateSidebar(); renderCurrentPage(); }
   });
