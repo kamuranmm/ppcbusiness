@@ -1,0 +1,124 @@
+name: PPC Telegram Bot
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'  # Hər dəqiqə işlə
+  workflow_dispatch:
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bot polling
+        run: |
+          node -e "
+          const https = require('https');
+          const BOT_TOKEN = '${{ secrets.TG_BOT_TOKEN }}';
+          
+          function tgRequest(method, params) {
+            return new Promise((res, rej) => {
+              const body = JSON.stringify(params);
+              const req = https.request({
+                hostname: 'api.telegram.org',
+                path: '/bot' + BOT_TOKEN + '/' + method,
+                method: 'POST',
+                headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+              }, r => {
+                let d = '';
+                r.on('data', c => d += c);
+                r.on('end', () => res(JSON.parse(d)));
+              });
+              req.on('error', rej);
+              req.write(body);
+              req.end();
+            });
+          }
+
+          async function fbGet(path) {
+            return new Promise((res, rej) => {
+              const DB = 'business-iddare-etme-sistemi-default-rtdb.firebaseio.com';
+              const req = https.request({
+                hostname: DB,
+                path: '/' + path + '.json',
+                method: 'GET'
+              }, r => {
+                let d = '';
+                r.on('data', c => d += c);
+                r.on('end', () => res(JSON.parse(d)));
+              });
+              req.on('error', () => res(null));
+              req.end();
+            });
+          }
+
+          async function fbSet(path, data) {
+            return new Promise((res, rej) => {
+              const DB = 'business-iddare-etme-sistemi-default-rtdb.firebaseio.com';
+              const body = JSON.stringify(data);
+              const req = https.request({
+                hostname: DB,
+                path: '/' + path + '.json',
+                method: 'PUT',
+                headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+              }, r => {
+                let d = '';
+                r.on('data', c => d += c);
+                r.on('end', () => res(JSON.parse(d)));
+              });
+              req.on('error', rej);
+              req.write(body);
+              req.end();
+            });
+          }
+
+          (async () => {
+            // Son offset oxu
+            const lastOffset = await fbGet('tg_bot/last_offset') || 0;
+            
+            // Yeni mesajları al
+            const updates = await tgRequest('getUpdates', {
+              offset: lastOffset + 1,
+              timeout: 5
+            });
+
+            if (!updates.ok || !updates.result.length) {
+              console.log('Yeni mesaj yoxdur');
+              return;
+            }
+
+            for (const update of updates.result) {
+              const msg = update.message;
+              if (!msg) continue;
+              
+              const chatId = msg.chat.id;
+              const text = msg.text || '';
+              const firstName = msg.from.first_name || '';
+
+              console.log('Mesaj:', chatId, text);
+
+              if (text === '/start' || text.startsWith('/start')) {
+                // Chat ID-ni göstər
+                await tgRequest('sendMessage', {
+                  chat_id: chatId,
+                  text: '👋 Salam ' + firstName + '!\n\n' +
+                        '🔑 Sizin Telegram ID-niz:\n\n' +
+                        '<code>' + chatId + '</code>\n\n' +
+                        '📋 Bu rəqəmi kopyalayıb PPC İşçi Portalında ' +
+                        '"Profil" bölməsinə daxil edin.',
+                  parse_mode: 'HTML'
+                });
+
+                // Firebase-ə yaz — işçi portalı oxusun
+                await fbSet('tg_pending/' + chatId, {
+                  chatId: chatId,
+                  name: firstName + ' ' + (msg.from.last_name || ''),
+                  username: msg.from.username || '',
+                  ts: Date.now()
+                });
+              }
+
+              // Offset yenilə
+              await fbSet('tg_bot/last_offset', update.update_id);
+            }
+          })();
+          "
