@@ -1248,55 +1248,75 @@ function seedData() {
 
 // ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
 function saveState() {
-  // Array-ları object-ə çevir (Firebase array-ları dəyişə bilər)
-  const data = {
-    workers:    S.workers,
-    tasks:      S.tasks,
-    funnel:     S.funnel,
-    adSources:  S.adSources,
-    pasientler: S.pasientler,
-    rehberler:  S.rehberler,
-    hedefler:   S.hedefler,
-    vakansiyalar: S.vakansiyalar,
-    yeniGelenler: S.yeniGelenler,
-    _hasData: true  // Firebase-in boş olub olmadığını anlamaq üçün marker
-  };
-  try{ localStorage.setItem('ppc_v2', JSON.stringify(data)); }catch(e){}
-  if(db) set(ref(db,'ppcdata'), data).catch(e=>console.error('Firebase yazma xətası:',e));
+  // Hər kolleksiyanı ayrıca yaz — bir birinə toxunmasın
+  if(!db) return;
+  const ops = [
+    set(ref(db,'ppcdata/tasks'),      S.tasks      || []),
+    set(ref(db,'ppcdata/workers'),    S.workers    || []),
+    set(ref(db,'ppcdata/funnel'),     S.funnel     || {}),
+    set(ref(db,'ppcdata/adSources'),  S.adSources  || []),
+    set(ref(db,'ppcdata/pasientler'), S.pasientler || []),
+    set(ref(db,'ppcdata/rehberler'),  S.rehberler  || []),
+    set(ref(db,'ppcdata/hedefler'),   S.hedefler   || []),
+    set(ref(db,'ppcdata/vakansiyalar'),S.vakansiyalar||[]),
+    set(ref(db,'ppcdata/yeniGelenler'),S.yeniGelenler||[]),
+    set(ref(db,'ppcdata/_hasData'),   true),
+  ];
+  Promise.all(ops).catch(e=>console.error('Firebase yazma xətası:',e));
 }
+
+// Yalnız tapşırıqları sürətli yaz (tez-tez dəyişir)
+function saveTasksOnly() {
+  if(!db) return;
+  set(ref(db,'ppcdata/tasks'), S.tasks || [])
+    .catch(e=>console.error('Tasks yazma xətası:',e));
+}
+// Array çevirici — Firebase bəzən array-ı object-ə çevirir
+const toArr = v => !v ? [] : Array.isArray(v) ? v : Object.values(v);
+
 function loadState() {
-  if(db) {
-    onValue(ref(db,'ppcdata'), snap => {
-      const d = snap.val();
-      if(d && d._hasData) {
-        // Firebase-də real məlumat var — onları istifadə et
-        // Firebase array-ları object-ə çevirə bilər, geri çevir
-        const toArr = v => v ? (Array.isArray(v) ? v : Object.values(v)) : [];
-        S.workers    = toArr(d.workers);
-        S.tasks      = toArr(d.tasks);
-        S.pasientler = toArr(d.pasientler);
-        S.rehberler  = toArr(d.rehberler);
-        S.hedefler   = toArr(d.hedefler);
+  if(!db){ seedData(); refreshAll(); return; }
+
+  // _hasData yoxla — əvvəlcə data var mı?
+  get(ref(db,'ppcdata/_hasData')).then(snap=>{
+    if(snap.val()===true){
+      // Data var — hər şeyi oxu
+      onValue(ref(db,'ppcdata'), d_snap=>{
+        const d = d_snap.val();
+        if(!d) return;
+        S.workers      = toArr(d.workers);
+        S.tasks        = toArr(d.tasks);
+        S.pasientler   = toArr(d.pasientler);
+        S.rehberler    = toArr(d.rehberler);
+        S.hedefler     = toArr(d.hedefler);
         S.vakansiyalar = toArr(d.vakansiyalar);
         S.yeniGelenler = toArr(d.yeniGelenler);
         if(d.funnel)    S.funnel    = d.funnel;
         if(d.adSources) S.adSources = d.adSources;
-      } else {
-        // Firebase boşdur — ilk dəfə, seed data yüklə
-        seedData();
-        saveState();
-      }
-      refreshAll();
-    }, () => {
-      // Firebase bağlantı xətası — seed data istifadə et
+        refreshAll();
+      });
+    } else {
+      // İlk dəfə — seed data yüklə
       seedData();
+      saveState();
       refreshAll();
-    });
-  } else {
-    // Firebase yoxdur — seed data istifadə et
-    seedData();
-    refreshAll();
-  }
+      // Sonra listener qur
+      onValue(ref(db,'ppcdata'), d_snap=>{
+        const d = d_snap.val();
+        if(!d||!d._hasData) return;
+        S.workers      = toArr(d.workers);
+        S.tasks        = toArr(d.tasks);
+        S.pasientler   = toArr(d.pasientler);
+        S.rehberler    = toArr(d.rehberler);
+        S.hedefler     = toArr(d.hedefler);
+        S.vakansiyalar = toArr(d.vakansiyalar);
+        S.yeniGelenler = toArr(d.yeniGelenler);
+        if(d.funnel)    S.funnel    = d.funnel;
+        if(d.adSources) S.adSources = d.adSources;
+        refreshAll();
+      });
+    }
+  }).catch(()=>{ seedData(); refreshAll(); });
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
@@ -1850,8 +1870,8 @@ window.saveTask = function() {
     date:today()
   };
   S.tasks.push(newTask);
-  saveState(); closeModal('modal-task'); refreshAll();
-  // Push bildirişi göndər
+  saveTasksOnly();
+  closeModal('modal-task'); refreshAll();
   const assignerName = document.getElementById('sf-name')?.textContent || 'Admin';
   sendTaskNotification(newTask.wid, newTask.name, assignerName);
   toast('Tapşırıq əlavə edildi ✓','success');
@@ -2253,7 +2273,7 @@ window.saveKuratorTask = function() {
     date:today(),
     fromLeader:r?.wid  // Kim verdi
   });
-  saveState(); closeModal('modal-kurator-task'); refreshAll(); renderRehberler();
+  saveTasksOnly(); closeModal('modal-kurator-task'); refreshAll(); renderRehberler();
   const assignee=S.workers.find(x=>x.id===wid);
   sendTaskNotification(wid, name, leader?.name.split(' ')[0]||'Rəhbər');
   toast(`${leader?.name.split(' ')[0]||'?'} → ${assignee?.name.split(' ')[0]||'?'} tapşırıq verildi ✓`,'success');
@@ -3023,8 +3043,11 @@ window.saveSettings = function() {
   const tok = document.getElementById('settings-gh-token')?.value?.trim();
   if(tok){
     localStorage.setItem('ppc_gh_token', tok);
-    // Cari session-da da yenilə
     window._ghToken = tok;
+    // Firebase-ə də yaz — bütün cihazlarda işləsin
+    if(db) set(ref(db,'ppc_config/gh_token'), tok).catch(()=>{});
+    // Xəbərdarlığı sil
+    document.getElementById('token-warn')?.remove();
   } else {
     localStorage.removeItem('ppc_gh_token');
     window._ghToken = '';
@@ -3108,6 +3131,18 @@ function showApp(user) {
   document.getElementById('sf-role-el').textContent = user.role;
   document.getElementById('tb-date').textContent = new Date().toLocaleDateString('az-AZ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   loadState(); // seedData() yalnız Firebase boşdursa çağırılır
+
+  // GitHub token Firebase-dən avtomatik yüklə
+  if(db) {
+    get(ref(db,'ppc_config/gh_token')).then(snap=>{
+      const tok = snap.val();
+      if(tok){
+        localStorage.setItem('ppc_gh_token', tok);
+        window._ghToken = tok;
+        console.log('[Token] Firebase-dən yükləndi');
+      }
+    }).catch(()=>{});
+  }
 
   // GitHub token varsa yüklə
   if(!localStorage.getItem('ppc_gh_token')) {
