@@ -423,7 +423,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             <div id="prof-cats"></div>
           </div>
         </div>
-        <div class="card" id="prof-risk-warn" style="display:none;border:1.5px solid #FCA5A5;background:#FEF2F2">
+        <!-- Telegram ID -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hdr"><span class="card-title">📱 Telegram Bildirişi</span></div>
+        <div id="tg-status" style="margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="fi" id="tg-chat-id" type="text" placeholder="Telegram Chat ID (məs: 5253859834)" style="flex:1">
+          <button class="btn btn-blue" onclick="saveTgId()">Saxla</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">
+          Chat ID almaq üçün: Telegram-da <strong>@Ppcbusiness_bot</strong>-a /start yazın → ID-nizi kopyalayıb buraya yapışdırın
+        </div>
+      </div>
+
+      <div class="card" id="prof-risk-warn" style="display:none;border:1.5px solid #FCA5A5;background:#FEF2F2">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="font-size:24px">⚠️</div>
             <div>
@@ -1287,6 +1300,7 @@ function renderProfile(){
   }).join('')||'<div style="font-size:12px;color:var(--text3);padding:10px 0">Hələ məlumat yoxdur</div>';
 
   // Risk xəbərdarlığı
+  loadTgStatus(); // Telegram statusunu yüklə
   const riskWarn=document.getElementById('prof-risk-warn');
   if(pts<RISK_LIMIT){
     riskWarn.style.display='block';
@@ -1341,6 +1355,41 @@ function showInAppNotif(title, body) {
   
   // Toast da göstər
   toast(title + ': ' + body, 'success');
+}
+
+// ── TELEGRAM ID SAXLA ───────────────────────────────────────────────────────
+window.saveTgId = async function() {
+  const chatId = document.getElementById('tg-chat-id')?.value?.trim();
+  if(!chatId || isNaN(chatId)) {
+    toast('Düzgün Chat ID daxil edin', 'error');
+    return;
+  }
+  // Firebase-ə yaz
+  if(db && ME?.id) {
+    await set(ref(db, 'tg_ids/' + ME.id), {
+      chatId: chatId,
+      name: ME.name,
+      workerId: ME.id,
+      ts: Date.now()
+    });
+  }
+  toast('Telegram qoşuldu ✓ Artıq bildirişlər gələcək', 'success');
+  loadTgStatus();
+};
+
+function loadTgStatus() {
+  if(!db || !ME?.id) return;
+  get(ref(db, 'tg_ids/' + ME.id)).then(snap => {
+    const d = snap.val();
+    const el = document.getElementById('tg-status');
+    const input = document.getElementById('tg-chat-id');
+    if(d?.chatId) {
+      if(el) el.innerHTML = '<span style="color:var(--green);font-size:12px">✅ Telegram qoşulub — ID: ' + d.chatId + '</span>';
+      if(input) input.value = d.chatId;
+    } else {
+      if(el) el.innerHTML = '<span style="color:var(--text3);font-size:12px">❌ Telegram qoşulmayıb</span>';
+    }
+  }).catch(()=>{});
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
