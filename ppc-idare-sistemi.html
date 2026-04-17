@@ -3135,14 +3135,17 @@ function showTaskAddedToast(task, assignerName) {
   // Telegram bildirişi — tapşırıq əlavə edildikdə avtomatik
   const w2 = S.workers.find(x=>x.id===task.wid);
   const pr = task.priority==='high'?'🔴 Yüksək':task.priority==='med'?'🟡 Orta':'🟢 Aşağı';
-  sendTelegram(
-    '📋 <b>Yeni Tapşırıq Əlavə Edildi</b>\n\n' +
-    '👤 İşçi: <b>' + (w2?.name||'?') + '</b>\n' +
+  // Avtomatik Telegram bildirişi
+  const tgMsg = '📋 <b>Yeni Tapşırıq</b>\n\n' +
+    '👤 <b>' + (w2?.name||'?') + '</b>\n' +
     '📝 ' + task.name + '\n' +
     '⚡ ' + pr + ' · ⭐ +' + task.pts + ' xal\n' +
-    '📅 Son tarix: ' + (task.deadline||'—') + '\n' +
-    '✍️ Verən: ' + assignerName
-  );
+    '📅 ' + (task.deadline||'—') + '\n' +
+    '✍️ ' + assignerName;
+  getWorkerTgId(task.wid).then(wTgId => {
+    if(wTgId) sendTelegram(tgMsg, wTgId); // İşçiyə
+    sendTelegram(tgMsg, TG_CHAT);          // Adminə
+  });
   
   // Tapşırıq sətirinin yanında bildiriş düyməsi göstər
   setTimeout(()=>{
@@ -3179,37 +3182,50 @@ window.manualSendNotif = async function(taskId) {
   const w = S.workers.find(x=>x.id===t.wid);
   const assignerName = document.getElementById('sf-name')?.textContent || 'Admin';
   toast('Bildiriş göndərilir...', '');
-  // Telegram bildirişi
   const priority = t.priority==='high'?'🔴 Yüksək':t.priority==='med'?'🟡 Orta':'🟢 Aşağı';
-  await sendTelegram(
-    '📋 <b>Yeni Tapşırıq</b>\n\n' +
+  const msg = '📋 <b>Yeni Tapşırıq</b>\n\n' +
     '👤 İşçi: <b>' + (w?.name||'?') + '</b>\n' +
-    '📝 Tapşırıq: ' + t.name + '\n' +
-    '⚡ Prioritet: ' + priority + '\n' +
-    '⭐ Xal: +' + t.pts + '\n' +
+    '📝 ' + t.name + '\n' +
+    '⚡ ' + priority + ' · ⭐ +' + t.pts + ' xal\n' +
     '📅 Son tarix: ' + (t.deadline||'—') + '\n' +
-    '👤 Verən: ' + assignerName
-  );
-  await sendTaskNotification(t.wid, t.name, assignerName);
-  toast('Bildiriş göndərildi 🔔', 'success');
+    '✍️ Verən: ' + assignerName;
+  // İşçinin Telegram-ına göndər
+  const workerTgId = await getWorkerTgId(t.wid);
+  if(workerTgId) {
+    await sendTelegram(msg, workerTgId); // İşçiyə
+  }
+  await sendTelegram(msg, TG_CHAT); // Adminə də göndər
+  toast('Telegram bildirişi göndərildi ✓', 'success');
 };
 
 // ── TELEGRAM BİLDİRİŞ ───────────────────────────────────────────────────────
 const TG_TOKEN  = '8611002531:AAE-H4kfdmzyuXzzTL6XXInix3ME-C7N4yk';
 const TG_CHAT   = '5253859834';
 
-async function sendTelegram(text) {
+async function sendTelegram(text, chatId) {
+  // chatId verilməyibsə admin chat-a göndər
+  const target = chatId || TG_CHAT;
   try {
-    await fetch('https://api.telegram.org/bot'+TG_TOKEN+'/sendMessage', {
+    const resp = await fetch('https://api.telegram.org/bot'+TG_TOKEN+'/sendMessage', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        chat_id: TG_CHAT,
+        chat_id: target,
         text: text,
         parse_mode: 'HTML'
       })
     });
-  } catch(e) {}
+    const r = await resp.json();
+    if(!r.ok) console.log('[TG] Xəta:', r.description);
+  } catch(e) { console.log('[TG] Fetch xətası:', e.message); }
+}
+
+// İşçinin Telegram Chat ID-sini Firebase-dən al
+async function getWorkerTgId(workerId) {
+  try {
+    const snap = await get(ref(db, 'tg_ids/' + workerId));
+    return snap.val()?.chatId || null;
+  } catch(e) { return null; }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
