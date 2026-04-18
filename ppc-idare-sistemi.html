@@ -346,7 +346,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
       <button class="nav-item" onclick="go('funnel',this)">
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-7 8.5V19l-4-2v-4.5L3 4z"/></svg>
-        Müştəri Funnel
+        Müştəri Axını
       </button>
       <button class="nav-item" onclick="go('workers',this)">
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.85"/></svg>
@@ -466,7 +466,7 @@ tbody tr:hover td{background:var(--surface2)}
         <!-- Mini funnel -->
         <div class="card">
           <div class="card-hdr">
-            <span class="card-title">📊 Müştəri Funnel — Bu ay</span>
+            <span class="card-title">📊 Müştəri Axını — Bu ay</span>
             <button class="btn btn-ghost btn-sm" onclick="go('funnel',null)">Detallı →</button>
           </div>
           <div id="dash-funnel"></div>
@@ -499,8 +499,11 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="g2">
         <div class="card">
           <div class="card-hdr">
-            <span class="card-title">Müştəri Yolu — Konversiya Funnel</span>
-            <button class="btn btn-blue btn-sm" onclick="openModal('modal-funnel')">Yenilə</button>
+            <span class="card-title">Müştəri Axını — Konversiya</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-blue btn-sm" onclick="openModal('modal-funnel')">Yenilə</button>
+              <button class="btn btn-ghost btn-sm" onclick="confirmResetFunnel()" style="color:var(--red);border-color:var(--red)">🗑 Sıfırla</button>
+            </div>
           </div>
           <div id="funnel-chevrons"></div>
         </div>
@@ -864,6 +867,10 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
     </div>
     <div class="fg"><label class="fl">Email</label><input class="fi" id="w-email" type="email" placeholder="leyla@ppc.az"></div>
+    <div class="fg" style="flex-direction:row;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px">
+      <input type="checkbox" id="w-icraci" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+      <label for="w-icraci" style="font-size:12px;color:var(--text2);cursor:pointer;margin:0">İcraci Direktor — filial tapşırıqlarını təsdiq edə bilər</label>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-worker')">Ləğv et</button>
       <button class="btn btn-primary" onclick="saveWorker()">Əlavə et</button>
@@ -1005,6 +1012,19 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="fg"><label class="fl">Son tarix</label><input class="fi" id="hd-deadline" type="date"></div>
     </div>
     <div class="fg"><label class="fl">Açıqlama</label><textarea class="ft" id="hd-note" placeholder="Hədəflə bağlı qeydlər..."></textarea></div>
+    
+    <div class="fg" style="border:2px dashed var(--border);border-radius:10px;padding:14px;background:var(--surface2)">
+      <label class="fl" style="margin-bottom:8px">🎁 Hədiyyə (hədəfə çatdıqda verilir)</label>
+      <input class="fi" id="hd-gift-name" placeholder="Hədiyyənin adı (məs: AirPods, Pul mükafatı...)" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <label style="flex:1;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;color:var(--text3);text-align:center" for="hd-gift-img">
+          <span id="hd-gift-preview">📷 Hədiyyənin şəklini yüklə</span>
+        </label>
+        <input type="file" id="hd-gift-img" accept="image/*" style="display:none" onchange="previewGiftImg(this)">
+        <button onclick="document.getElementById('hd-gift-img').value='';document.getElementById('hd-gift-preview').innerHTML='📷 Hədiyyənin şəklini yüklə';window._giftImgB64=null" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px" title="Sil">×</button>
+      </div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-hedef')">Ləğv et</button>
       <button class="btn btn-primary" onclick="saveHedef()">Hədəf Qoy</button>
@@ -1353,7 +1373,7 @@ window.go = function(id, el) {
     const map={dash:0,tasks:1,funnel:2,workers:3,leader:4,analytics:5,report:6};
     document.querySelectorAll('.nav-item')[map[id]]?.classList.add('active');
   }
-  const titles={dash:'İdarə Paneli',tasks:'Tapşırıqlar',funnel:'Müştəri Funnel & CRM',workers:'İşçilər & KPI',leader:'Liderboard',analytics:'Analitika',report:'Ay Hesabatı',filialstat:'Filial Statistikası',rehberler:'Rəhbərlər & Kuratorluq Sistemi',hedefler:'Hədəflər',vakansiya:'Vakansiya İdarəetməsi',yenigelen:'Yeni Gələn İşçilər',risk:'Risk Hovuzu — Performans Xəbərdarlığı',muraciatlər:'Yeni İşçi Müraciətləri'};
+  const titles={dash:'İdarə Paneli',tasks:'Tapşırıqlar',funnel:'Müştəri Axını & CRM',workers:'İşçilər & KPI',leader:'Liderboard',analytics:'Analitika',report:'Ay Hesabatı',filialstat:'Filial Statistikası',rehberler:'Rəhbərlər & Kuratorluq Sistemi',hedefler:'Hədəflər',vakansiya:'Vakansiya İdarəetməsi',yenigelen:'Yeni Gələn İşçilər',risk:'Risk Hovuzu — Performans Xəbərdarlığı',muraciatlər:'Yeni İşçi Müraciətləri'};
   document.getElementById('tb-title').textContent = titles[id]||id;
   renderPage(id);
   populateWorkerSelects();
@@ -1517,6 +1537,9 @@ function renderTasks(f) {
       <div class="av av-sm" style="background:${w?.color||'#ccc'}18;color:${w?.color||'#888'};font-size:9px">${initials(w?.name||'?')}</div>
       <div style="font-size:10px;color:var(--text3);min-width:50px;text-align:right">${w?.name.split(' ')[0]||''}</div>
       ${dlTxt?`<span class="dl-badge ${dlCls}">${dlTxt}</span>`:''}
+      ${t.done && t.icraci_status==='gozleyir' ? '<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;white-space:nowrap">⏳ İcraci gözləyir</span>' : ''}
+      ${t.done && t.icraci_status==='tesdiq'   ? '<span style="font-size:9px;background:#ECFDF5;color:#065F46;padding:2px 6px;border-radius:4px;white-space:nowrap">✅ Təsdiqləndi</span>' : ''}
+      ${t.done && t.icraci_status==='red'      ? '<span style="font-size:9px;background:#FEF2F2;color:#991B1B;padding:2px 6px;border-radius:4px;white-space:nowrap">❌ Geri qaytarıldı</span>' : ''}
       <div class="tpts">+${t.pts}</div>
       <button onclick="deleteTask('${t.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px" title="Sil">×</button>
       <button onclick="manualSendNotif('${t.id}')" style="background:none;border:none;color:#1E5FAD;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px" title="Bildiriş göndər">🔔</button>
@@ -1527,7 +1550,15 @@ function renderTasks(f) {
 window.toggleTask = function(id) {
   const t = S.tasks.find(x=>x.id===id); if(!t) return;
   t.done = !t.done;
-  fbUpdateTask(id, {done: t.done});
+  if(t.done) {
+    // Tamamlandı — icraci direktoru gözləyir
+    t.icraci_status = 'gozleyir';
+    t.done_ts = Date.now();
+    fbUpdateTask(id, {done: true, icraci_status: 'gozleyir', done_ts: Date.now()});
+  } else {
+    t.icraci_status = null;
+    fbUpdateTask(id, {done: false, icraci_status: null});
+  }
   refreshAll();
   toast(t.done?`+${t.pts} xal qazanıldı! 🎉`:'Tapşırıq açıldı', t.done?'success':'');
 }
@@ -1815,6 +1846,14 @@ window.openModal = function(id) {
   populateWorkerSelects();
   // Yeni modal-lar üçün populate
   if(id==='modal-hedef'){
+    // Hədiyyə sahəsini sıfırla
+    const giftName = document.getElementById('hd-gift-name');
+    if(giftName) giftName.value = '';
+    const giftPreview = document.getElementById('hd-gift-preview');
+    if(giftPreview) giftPreview.innerHTML = '📷 Hədiyyənin şəklini yüklə';
+    const giftImg = document.getElementById('hd-gift-img');
+    if(giftImg) giftImg.value = '';
+    window._giftImgB64 = null;
     const tSel=document.getElementById('hd-target');
     const tType=document.getElementById('hd-type').value||'dept';
     if(tSel){
@@ -1904,11 +1943,12 @@ window.saveWorker = function() {
   if(!name){toast('Ad daxil edin','error');return;}
   S.workers.push({
     id:'w'+Date.now(), name,
-    role:document.getElementById('w-role').value,
-    dept:document.getElementById('w-dept').value,
-    branch:document.getElementById('w-branch').value,
-    email:document.getElementById('w-email').value,
-    color:COLORS[S.workers.length%COLORS.length]
+    role:     document.getElementById('w-role').value,
+    dept:     document.getElementById('w-dept').value,
+    branch:   document.getElementById('w-branch').value,
+    email:    document.getElementById('w-email').value,
+    color:    COLORS[S.workers.length%COLORS.length],
+    is_icraci: document.getElementById('w-icraci')?.checked || false,
   });
   saveState(); closeModal('modal-worker'); refreshAll();
   toast(`${name} sisteme əlavə edildi ✓`,'success');
@@ -2364,6 +2404,12 @@ function renderHedefler() {
           <button onclick="deleteHedef('${h.id}')" class="btn btn-danger btn-sm">Sil</button>
         </div>
       </div>
+      ${(h.gift_name||h.gift_img) ? `<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 12px;background:#FEF3C7;border-radius:8px;border:1px solid #F59E0B">
+        ${h.gift_img ? '<img src="'+h.gift_img+'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0">' : '<span style="font-size:24px">🎁</span>'}
+        <div style="flex:1"><div style="font-size:10px;color:#92400E;font-weight:600">HƏDİYYƏ</div>
+        <div style="font-size:12px;color:#78350F;font-weight:700">${h.gift_name||'Sürpriz!'}</div></div>
+        ${h.done ? '<span style="font-size:20px">🎉</span>' : '<span style="font-size:11px;color:#92400E">Hədəfə çat → al!</span>'}
+      </div>` : ''}
     </div>`;
   }).join('') : '<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">🎯</div><div>Hədəf tapılmadı. "+ Yeni hədəf qoy" düyməsindən başlayın.</div></div>';
 }
@@ -2379,8 +2425,11 @@ window.saveHedef = function() {
     target:document.getElementById('hd-target').value,
     value, current:parseInt(document.getElementById('hd-current').value)||0,
     deadline:document.getElementById('hd-deadline').value,
-    done:false, note:document.getElementById('hd-note').value
+    done:false, note:document.getElementById('hd-note').value,
+    gift_name: document.getElementById('hd-gift-name')?.value?.trim() || '',
+    gift_img:  window._giftImgB64 || null,
   });
+  window._giftImgB64 = null;
   saveState(); closeModal('modal-hedef'); renderHedefler();
   toast('Hədəf əlavə edildi 🎯','success');
 };
@@ -3227,6 +3276,78 @@ async function getWorkerTgId(workerId) {
     return snap.val()?.chatId || null;
   } catch(e) { return null; }
 }
+
+// ── FUNNEL SIFIRLA ───────────────────────────────────────────────────────────
+window.confirmResetFunnel = function() {
+  if(!confirm('Müştəri axını məlumatları sıfırlanacaq. Davam etmək istəyirsiniz?')) return;
+  
+  // Funnel-i sıfırla
+  S.funnel = {
+    muraciет: 0, elaqe: 0, goruş: 0, seans: 0, odeme: 0,
+    bu_ay_muraciет: 0, bu_ay_elaqe: 0, bu_ay_goruş: 0,
+    bu_ay_seans: 0, bu_ay_odeme: 0
+  };
+  
+  // Firebase-ə yaz
+  if(db) set(ref(db,'ppcdata/funnel'), S.funnel).catch(()=>{});
+  
+  // Pasientlər sıfırla
+  S.pasientler = [];
+  if(db) set(ref(db,'ppcdata/pasientler'), []).catch(()=>{});
+  
+  // Ad mənbələri sıfırla  
+  S.adSources = [];
+  if(db) set(ref(db,'ppcdata/adSources'), []).catch(()=>{});
+
+  refreshAll();
+  toast('Müştəri axını sıfırlandı ✓', 'success');
+};
+
+// ── İCRACI DIREKTOR TƏSDİQ SİSTEMİ ─────────────────────────────────────────
+window.icraciTesdiq = async function(taskId, tesdiq) {
+  const t = S.tasks.find(x=>x.id===taskId); if(!t) return;
+  const status = tesdiq ? 'tesdiq' : 'red';
+  t.icraci_status = status;
+  fbUpdateTask(taskId, {icraci_status: status, tesdiq_ts: Date.now()});
+  if(!tesdiq) {
+    // Rədd edildi — tapşırığı geri aç
+    t.done = false;
+    fbUpdateTask(taskId, {done: false, icraci_status: 'red'});
+  }
+  refreshAll();
+  toast(tesdiq ? '✅ Tapşırıq təsdiqləndi' : '❌ Tapşırıq geri qaytarıldı', tesdiq?'success':'');
+};
+
+// İcraci direktoru yoxla
+function isIcraciDirector(worker) {
+  if(!worker) return false;
+  const role = (worker.role||'').toLowerCase();
+  return role.includes('icraci') || role.includes('direktor');
+}
+
+// İcracinin filialının tapşırıqları
+function icraciTasks(worker) {
+  if(!worker) return [];
+  return S.tasks.filter(t => {
+    const w = S.workers.find(x=>x.id===t.wid);
+    return w && w.branch === worker.branch && t.done && t.icraci_status === 'gozleyir';
+  });
+}
+
+// ── HƏDİYYƏ ŞƏKLİ ───────────────────────────────────────────────────────────
+window._giftImgB64 = null;
+
+window.previewGiftImg = function(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    window._giftImgB64 = e.target.result;
+    const preview = document.getElementById('hd-gift-preview');
+    if(preview) preview.innerHTML = '<img src="'+e.target.result+'" style="max-height:60px;max-width:120px;border-radius:6px;object-fit:cover">';
+  };
+  reader.readAsDataURL(file);
+};
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast = function(msg, type='') {
