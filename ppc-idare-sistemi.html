@@ -3308,26 +3308,20 @@ window.doAdminLogin = async function() {
   if(!email||!pass){err.textContent='Email və şifrəni daxil edin';err.style.display='block';return;}
   btn.disabled=true; btn.textContent='Yüklənir...'; err.style.display='none';
 
-  // Firebase Auth cəhd et
-  let fbOk = false;
-  if(auth) {
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      fbOk = true;
-    } catch(e) {}
-  }
-
-  // Local admin yoxla (demo/fallback)
-  const localUser = ADMIN_USERS.find(u=>u.email===email&&u.pass===pass);
-
-  if(fbOk || localUser) {
-    const user = localUser || {name: email.split('@')[0], role:'Admin'};
-    try{ localStorage.setItem('ppc_admin_session', JSON.stringify({email, name:user.name, role:user.role, ts:Date.now()})); }catch(e){}
-    showApp(user);
-  } else {
-    err.textContent = 'Email və ya şifrə yanlışdır';
-    err.style.display='block';
-    btn.disabled=false; btn.textContent='Daxil ol';
+  // Firebase Auth ilə giriş et
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged avtomatik showApp-ı çağıracaq
+  } catch(e) {
+    // Firebase Auth olmadıqda local yoxla
+    const localUser = ADMIN_USERS.find(u=>u.email===email&&u.pass===pass);
+    if(localUser){
+      showApp(localUser);
+    } else {
+      err.textContent = 'Email və ya şifrə yanlışdır';
+      err.style.display='block';
+      btn.disabled=false; btn.textContent='Daxil ol';
+    }
   }
 };
 
@@ -3343,36 +3337,23 @@ window.doAdminLogout = async function() {
   document.getElementById('al-btn').textContent='Daxil ol';
 };
 
-// Session yoxla — localStorage + cookie + Firebase üçlü
+// Session yoxla — Firebase Auth əsaslı
 (async function checkSession(){
-  // 1. localStorage
-  let sess = null;
-  try{ sess = JSON.parse(localStorage.getItem('ppc_admin_session')||'null'); }catch(e){}
+  if(!auth){ showLogin(); return; }
 
-  // 2. Cookie
-  if(!sess?.email && !sess?.name){
-    try{
-      const m = document.cookie.split(';').find(c=>c.trim().startsWith('ppc_admin_sid='));
-      if(m) sess = JSON.parse(decodeURIComponent(m.split('=')[1]));
-    }catch(e){}
-  }
-
-  if(sess?.name){
-    showApp(sess);
-    return;
-  }
-
-  // 3. Firebase Auth
-  if(auth){
-    onAuthStateChanged(auth, user=>{
-      if(user){
-        const u=ADMIN_USERS.find(x=>x.email===user.email)||{email:user.email,name:user.email.split('@')[0],role:'Admin'};
-        showApp(u);
-      } else { showLogin(); }
-    });
-  } else {
-    showLogin();
-  }
+  // Firebase Auth vəziyyəti dəyişəndə — bu refresh-də də işləyir
+  onAuthStateChanged(auth, user => {
+    if(user){
+      const u = ADMIN_USERS.find(x=>x.email===user.email) || {
+        email: user.email,
+        name:  user.email.split('@')[0],
+        role:  'Admin'
+      };
+      showApp(u);
+    } else {
+      showLogin();
+    }
+  });
 })();
 </script>
 </body>
