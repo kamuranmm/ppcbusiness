@@ -400,10 +400,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a4 4 0 014-4h8a4 4 0 014 4v2"/></svg>
         Profilim
       </button>
+      <button class="nav-item" id="tesdiq-nav" onclick="goPage('tesdiq',this)" style="display:none">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Təsdiq
+        <span id="tesdiq-badge" style="position:absolute;top:4px;right:4px;background:#D94F3D;color:#fff;font-size:8px;padding:1px 4px;border-radius:8px;display:none"></span>
+      </button>
       <a id="tg-nav-link" href="https://t.me/Ppcbusiness_bot" target="_blank"
-        class="nav-item" style="text-decoration:none;color:inherit">
-        <svg class="nav-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.94z"/></svg>
-        Telegram
+        class="nav-item" style="text-decoration:none;color:inherit;background:rgba(43,116,212,.25);border:1px solid rgba(43,116,212,.4)">
+        <svg class="nav-ic" viewBox="0 0 24 24" fill="currentColor" style="color:#60A5FA"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.94z"/></svg>
+        <span style="color:#60A5FA;font-size:9px">Qoş</span>
       </a>
 
     </nav>
@@ -504,6 +509,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <div id="hd-my-list"></div>
       </div>
 
+      <!-- TƏSDİQ LOVHƏSI (İcraci Direktor) -->
+      <div id="page-tesdiq" class="page">
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-title">✅ Tapşırıq Təsdiq Lovhəsi</span>
+            <span style="font-size:11px;color:var(--text3)" id="tesdiq-filial"></span>
+          </div>
+          <div id="tesdiq-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+        </div>
+      </div>
+
       <!-- PROFİL -->
       <div id="page-profile" class="page">
 
@@ -599,10 +615,30 @@ const toArr = v => {
 function startListener() {
   if(!db) return;
 
-  // Tapşırıqları tasks/ kökündən oxu (admin paneli ilə eyni yer)
+  // Tapşırıqları ppcdata/tasks-dan oxu
   onValue(ref(db,'ppcdata/tasks'), snap => {
     S.tasks = toArr(snap.val());
-    if(ME) { updateSidebar(); renderCurrentPage(); }
+    if(ME) {
+      updateSidebar();
+      renderCurrentPage();
+      // İcraci direktordursa badge yenilə
+      if(ME.is_icraci) renderTesdiq();
+    }
+  });
+
+  // Telegram qoşulmasını real-time izlə
+  onValue(ref(db, 'tg_ids/' + ME.id), snap => {
+    const tgLink = document.getElementById('tg-nav-link');
+    if(!tgLink) return;
+    if(snap.val()?.chatId) {
+      // Qoşuldu — düyməni gizlət, toast göstər
+      if(tgLink.style.display !== 'none') {
+        tgLink.style.display = 'none';
+        toast('✅ Telegram uğurla qoşuldu! Artıq bildiriş alacaqsınız.', 'success');
+      }
+    } else {
+      tgLink.style.display = '';
+    }
   });
 
   // Digər məlumatları ppcdata/-dən oxu (tasks-a toxunma!)
@@ -968,8 +1004,35 @@ function enterApp() {
   updateSidebar();
   goPage('overview', document.querySelector('.nav-item'));
   setTimeout(() => { addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
+  // Telegram nav linkini işçi ID ilə yenilə
   const tgLink = document.getElementById('tg-nav-link');
-  if(tgLink && ME?.id) tgLink.href = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
+  if(tgLink && ME?.id) {
+    tgLink.href = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
+  }
+  checkTgNavStatus();
+
+  // İcraci Direktordursa Təsdiq bölməsini göstər
+  if(ME.is_icraci) {
+    const tesdiqNav = document.getElementById('tesdiq-nav');
+    if(tesdiqNav) tesdiqNav.style.display = '';
+    const filialEl = document.getElementById('tesdiq-filial');
+    if(filialEl) filialEl.textContent = ME.branch;
+  }
+}
+
+async function checkTgNavStatus() {
+  if(!db || !ME?.id) return;
+  try {
+    const snap = await get(ref(db, 'tg_ids/' + ME.id));
+    const tgLink = document.getElementById('tg-nav-link');
+    if(snap.val()?.chatId) {
+      // Qoşulub — düyməni gizlət
+      if(tgLink) tgLink.style.display = 'none';
+    } else {
+      // Qoşulmayıb — düyməni göstər
+      if(tgLink) tgLink.style.display = '';
+    }
+  } catch(e) {}
 }
 
 window.doLogout = async function() {
@@ -1017,6 +1080,7 @@ function renderPage(id){
   else if(id==='rank')   renderRank();
   else if(id==='hedeflerim') renderMyHedefler();
   else if(id==='profile')renderProfile();
+  else if(id==='tesdiq') renderTesdiq();
 }
 function renderCurrentPage(){ renderPage(curPage); updateSidebar(); }
 
@@ -1278,6 +1342,61 @@ function renderMyHedefler(){
 
 
 
+// ── TƏSDİQ LOVHƏSI ───────────────────────────────────────────────────────────
+function renderTesdiq() {
+  if(!ME?.is_icraci) return;
+
+  // Filialın gözləyən tapşırıqları
+  const pending = S.tasks.filter(t => {
+    const w = S.workers.find(x=>x.id===t.wid);
+    return w && w.branch === ME.branch && t.done && t.icraci_status === 'gozleyir';
+  });
+
+  // Badge yenilə
+  const badge = document.getElementById('tesdiq-badge');
+  if(badge) {
+    badge.textContent = pending.length || '';
+    badge.style.display = pending.length ? 'block' : 'none';
+  }
+
+  const list = document.getElementById('tesdiq-list');
+  if(!list) return;
+
+  if(!pending.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">Gözləyən tapşırıq yoxdur ✓</div>';
+    return;
+  }
+
+  list.innerHTML = pending.map(t => {
+    const w = S.workers.find(x=>x.id===t.wid);
+    return '<div style="background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border)">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:'+(w?.color||'#ccc')+'22;color:'+(w?.color||'#888')+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">'
+      + initials(w?.name||'?')+'</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:600">'+t.name+'</div>'
+      + '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(w?.name||'?')+' · +'+t.pts+' xal · '+(t.deadline||'—')+'</div></div></div>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button onclick="workerTesdiq(''+t.id+'',true)" style="flex:1;padding:8px;background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✅ Təsdiqlə</button>'
+      + '<button onclick="workerTesdiq(''+t.id+'',false)" style="flex:1;padding:8px;background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">❌ Geri qaytar</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+window.workerTesdiq = async function(taskId, tesdiq) {
+  const t = S.tasks.find(x=>x.id===taskId); if(!t) return;
+  const status = tesdiq ? 'tesdiq' : 'red';
+  t.icraci_status = status;
+  if(!tesdiq) { t.done = false; }
+  if(db) {
+    const updates = {icraci_status: status, tesdiq_ts: Date.now()};
+    if(!tesdiq) updates.done = false;
+    await update(ref(db,'ppcdata/tasks/'+taskId), updates).catch(()=>{});
+  }
+  renderTesdiq();
+  renderCurrentPage();
+  toast(tesdiq ? '✅ Tapşırıq təsdiqləndi' : '❌ Tapşırıq geri qaytarıldı', tesdiq?'success':'');
+};
+
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast=function(msg,type=''){
   const t=document.getElementById('toast');
@@ -1415,6 +1534,61 @@ function showInAppNotif(title, body) {
 
 
 
+
+// ── TƏSDİQ LOVHƏSI ───────────────────────────────────────────────────────────
+function renderTesdiq() {
+  if(!ME?.is_icraci) return;
+
+  // Filialın gözləyən tapşırıqları
+  const pending = S.tasks.filter(t => {
+    const w = S.workers.find(x=>x.id===t.wid);
+    return w && w.branch === ME.branch && t.done && t.icraci_status === 'gozleyir';
+  });
+
+  // Badge yenilə
+  const badge = document.getElementById('tesdiq-badge');
+  if(badge) {
+    badge.textContent = pending.length || '';
+    badge.style.display = pending.length ? 'block' : 'none';
+  }
+
+  const list = document.getElementById('tesdiq-list');
+  if(!list) return;
+
+  if(!pending.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">Gözləyən tapşırıq yoxdur ✓</div>';
+    return;
+  }
+
+  list.innerHTML = pending.map(t => {
+    const w = S.workers.find(x=>x.id===t.wid);
+    return '<div style="background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border)">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:'+(w?.color||'#ccc')+'22;color:'+(w?.color||'#888')+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">'
+      + initials(w?.name||'?')+'</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:600">'+t.name+'</div>'
+      + '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(w?.name||'?')+' · +'+t.pts+' xal · '+(t.deadline||'—')+'</div></div></div>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button onclick="workerTesdiq(''+t.id+'',true)" style="flex:1;padding:8px;background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✅ Təsdiqlə</button>'
+      + '<button onclick="workerTesdiq(''+t.id+'',false)" style="flex:1;padding:8px;background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">❌ Geri qaytar</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+window.workerTesdiq = async function(taskId, tesdiq) {
+  const t = S.tasks.find(x=>x.id===taskId); if(!t) return;
+  const status = tesdiq ? 'tesdiq' : 'red';
+  t.icraci_status = status;
+  if(!tesdiq) { t.done = false; }
+  if(db) {
+    const updates = {icraci_status: status, tesdiq_ts: Date.now()};
+    if(!tesdiq) updates.done = false;
+    await update(ref(db,'ppcdata/tasks/'+taskId), updates).catch(()=>{});
+  }
+  renderTesdiq();
+  renderCurrentPage();
+  toast(tesdiq ? '✅ Tapşırıq təsdiqləndi' : '❌ Tapşırıq geri qaytarıldı', tesdiq?'success':'');
+};
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast=function(msg,type=''){
