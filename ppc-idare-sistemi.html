@@ -3192,8 +3192,17 @@ function showTaskAddedToast(task, assignerName) {
     '📅 ' + (task.deadline||'—') + '\n' +
     '✍️ ' + assignerName;
   getWorkerTgId(task.wid).then(wTgId => {
-    if(wTgId) sendTelegram(tgMsg, wTgId); // İşçiyə
-    sendTelegram(tgMsg, TG_CHAT);          // Adminə
+    if(wTgId) {
+      // İşçiyə inline düymələrlə göndər
+      const keyboard = {
+        inline_keyboard: [[
+          {text: '✅ Tamamlandı', callback_data: 'done:'+task.id+':'+task.wid},
+          {text: '❌ Tamamlanmadı', callback_data: 'notdone:'+task.id+':'+task.wid}
+        ]]
+      };
+      sendTelegram(tgMsg, wTgId, keyboard);
+    }
+    sendTelegram(tgMsg, TG_CHAT); // Adminə (düymə yoxdur)
   });
   
   // Tapşırıq sətirinin yanında bildiriş düyməsi göstər
@@ -3238,12 +3247,18 @@ window.manualSendNotif = async function(taskId) {
     '⚡ ' + priority + ' · ⭐ +' + t.pts + ' xal\n' +
     '📅 Son tarix: ' + (t.deadline||'—') + '\n' +
     '✍️ Verən: ' + assignerName;
-  // İşçinin Telegram-ına göndər
+  // İşçinin Telegram-ına inline düymələrlə göndər
   const workerTgId = await getWorkerTgId(t.wid);
   if(workerTgId) {
-    await sendTelegram(msg, workerTgId); // İşçiyə
+    const keyboard = {
+      inline_keyboard: [[
+        {text: '✅ Tamamlandı', callback_data: 'done:'+t.id+':'+t.wid},
+        {text: '❌ Tamamlanmadı', callback_data: 'notdone:'+t.id+':'+t.wid}
+      ]]
+    };
+    await sendTelegram(msg, workerTgId, keyboard);
   }
-  await sendTelegram(msg, TG_CHAT); // Adminə də göndər
+  await sendTelegram(msg, TG_CHAT);
   toast('Telegram bildirişi göndərildi ✓', 'success');
 };
 
@@ -3251,18 +3266,15 @@ window.manualSendNotif = async function(taskId) {
 const TG_TOKEN  = '8611002531:AAE-H4kfdmzyuXzzTL6XXInix3ME-C7N4yk';
 const TG_CHAT   = '5253859834';
 
-async function sendTelegram(text, chatId) {
-  // chatId verilməyibsə admin chat-a göndər
+async function sendTelegram(text, chatId, replyMarkup) {
   const target = chatId || TG_CHAT;
   try {
+    const body = { chat_id:target, text, parse_mode:'HTML' };
+    if(replyMarkup) body.reply_markup = replyMarkup;
     const resp = await fetch('https://api.telegram.org/bot'+TG_TOKEN+'/sendMessage', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        chat_id: target,
-        text: text,
-        parse_mode: 'HTML'
-      })
+      body: JSON.stringify(body)
     });
     const r = await resp.json();
     if(!r.ok) console.log('[TG] Xəta:', r.description);
