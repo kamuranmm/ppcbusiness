@@ -1,10 +1,8 @@
 name: PPC Bildiriş Sistemi
 
 on:
-  # Firebase Realtime DB dəyişikliyi webhook ilə tetiklənir
   repository_dispatch:
     types: [send-notification]
-  # Manual test üçün
   workflow_dispatch:
     inputs:
       workerId:
@@ -14,11 +12,11 @@ on:
       title:
         description: 'Bildiriş başlığı'
         required: true
-        default: 'Test Bildirişi'
+        default: 'Test'
       body:
         description: 'Bildiriş mətni'
         required: true
-        default: 'Bu test bildirişidir'
+        default: 'Test bildirişi'
 
 jobs:
   send-notification:
@@ -26,74 +24,70 @@ jobs:
     steps:
       - name: Bildiriş göndər
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          VAPID_KEY: ${{ secrets.VAPID_KEY }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          WORKER_ID: ${{ github.event.client_payload.workerId || github.event.inputs.workerId }}
+          MSG_TITLE: ${{ github.event.client_payload.title || github.event.inputs.title }}
+          MSG_BODY: ${{ github.event.client_payload.body || github.event.inputs.body }}
+          TASK_ID: ${{ github.event.client_payload.taskId || '' }}
         run: |
-          node -e "
-          const https = require('https');
+          node << 'EOF'
+          const https  = require('https');
           const crypto = require('crypto');
 
-          const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-          const workerId = '${{ github.event.client_payload.workerId || github.event.inputs.workerId }}';
-          const title    = '${{ github.event.client_payload.title    || github.event.inputs.title }}';
-          const body     = '${{ github.event.client_payload.body     || github.event.inputs.body }}';
+          const sa       = JSON.parse(process.env.FIREBASE_SA);
+          const workerId = process.env.WORKER_ID;
+          const title    = process.env.MSG_TITLE;
+          const body     = process.env.MSG_BODY;
+          const taskId   = process.env.TASK_ID;
 
-          console.log('Bildiriş göndərilir:', workerId, title);
+          console.log('Bildiriş:', workerId, title);
 
-          // Google Access Token al
           async function getAccessToken() {
             const now = Math.floor(Date.now()/1000);
-            const header  = Buffer.from(JSON.stringify({alg:'RS256',typ:'JWT'})).toString('base64url');
-            const payload = Buffer.from(JSON.stringify({
-              iss: sa.client_email,
-              sub: sa.client_email,
-              aud: 'https://oauth2.googleapis.com/token',
-              iat: now,
-              exp: now + 3600,
-              scope: 'https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/userinfo.email'
+            const hdr = Buffer.from(JSON.stringify({alg:'RS256',typ:'JWT'})).toString('base64url');
+            const pay = Buffer.from(JSON.stringify({
+              iss:sa.client_email, sub:sa.client_email,
+              aud:'https://oauth2.googleapis.com/token',
+              iat:now, exp:now+3600,
+              scope:'https://www.googleapis.com/auth/firebase.messaging'
             })).toString('base64url');
             const sign = crypto.createSign('RSA-SHA256');
-            sign.update(header+'.'+payload);
+            sign.update(hdr+'.'+pay);
             const sig = sign.sign(sa.private_key,'base64url');
-            const jwt = header+'.'+payload+'.'+sig;
+            const jwt = hdr+'.'+pay+'.'+sig;
             return new Promise((res,rej)=>{
-              const body = 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion='+jwt;
+              const b = 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion='+jwt;
               const req = https.request({
-                hostname:'oauth2.googleapis.com',
-                path:'/token', method:'POST',
-                headers:{'Content-Type':'application/x-www-form-urlencoded','Content-Length':body.length}
-              }, r=>{
-                let d=''; r.on('data',c=>d+=c);
-                r.on('end',()=>{ try{res(JSON.parse(d).access_token);}catch(e){rej(e);} });
-              });
-              req.on('error',rej); req.write(body); req.end();
+                hostname:'oauth2.googleapis.com', path:'/token', method:'POST',
+                headers:{'Content-Type':'application/x-www-form-urlencoded','Content-Length':b.length}
+              },r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{res(JSON.parse(d).access_token);}catch(e){rej(e);}});});
+              req.on('error',rej); req.write(b); req.end();
             });
           }
 
-          // Firebase DB-dən FCM token oxu
-          async function getToken(accessToken, wid) {
-            return new Promise((res,rej)=>{
+          async function fbGet(path) {
+            return new Promise(res=>{
               const req = https.request({
-                hostname: sa.project_id+'-default-rtdb.firebaseio.com',
-                path: '/fcm_tokens/'+wid+'.json?access_token='+accessToken,
-                method:'GET'
-              }, r=>{
-                let d=''; r.on('data',c=>d+=c);
-                r.on('end',()=>{ try{const v=JSON.parse(d); res(v?.token||null);}catch(e){res(null);} });
-              });
+                hostname:sa.project_id+'-default-rtdb.firebaseio.com',
+                path:'/'+path+'.json', method:'GET'
+              },r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{res(JSON.parse(d));}catch(e){res(null);}});});
               req.on('error',()=>res(null)); req.end();
             });
           }
 
-          // FCM vasitəsilə push göndər
-          async function sendFCM(accessToken, fcmToken, title, body) {
+          async function sendFCM(token, accessToken) {
             const msg = JSON.stringify({
               message:{
-                token: fcmToken,
-                notification:{ title, body },
-                android:{ priority:'high', notification:{ sound:'default', channelId:'ppc_channel', color:'#1B3A6B' }},
-                apns:{ payload:{ aps:{ sound:'default', badge:1 }}},
-                webpush:{ headers:{ Urgency:'high' }, notification:{ icon:'/ppc-icon-192.png', badge:'/ppc-badge-72.png', vibrate:[200,100,200] }, fcmOptions:{ link:'/ppc-isci-portal.html' }}
+                token,
+                notification:{title, body},
+                android:{priority:'high', notification:{sound:'default', color:'#1B3A6B'}},
+                apns:{payload:{aps:{sound:'default', badge:1}}},
+                webpush:{
+                  headers:{Urgency:'high'},
+                  notification:{icon:'/ppc-icon-192.png', badge:'/ppc-badge-72.png'},
+                  fcmOptions:{link:'/ppc-isci-portal.html'}
+                },
+                data: taskId ? {taskId, type:'new_task'} : {type:'general'}
               }
             });
             return new Promise((res,rej)=>{
@@ -101,28 +95,26 @@ jobs:
                 hostname:'fcm.googleapis.com',
                 path:'/v1/projects/'+sa.project_id+'/messages:send',
                 method:'POST',
-                headers:{ 'Authorization':'Bearer '+accessToken, 'Content-Type':'application/json', 'Content-Length':Buffer.byteLength(msg) }
-              }, r=>{
-                let d=''; r.on('data',c=>d+=c);
-                r.on('end',()=>{ console.log('FCM cavab:', r.statusCode, d); res(r.statusCode); });
-              });
+                headers:{
+                  'Authorization':'Bearer '+accessToken,
+                  'Content-Type':'application/json',
+                  'Content-Length':Buffer.byteLength(msg)
+                }
+              },r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{console.log('FCM:',r.statusCode,d.slice(0,100));res(r.statusCode);});});
               req.on('error',rej); req.write(msg); req.end();
             });
           }
 
-          // Əsas axın
           (async()=>{
             try {
               const accessToken = await getAccessToken();
-              console.log('Access token alındı');
-              const fcmToken = await getToken(accessToken, workerId);
-              if(!fcmToken){ console.log('FCM token tapılmadı:', workerId); process.exit(0); }
-              console.log('FCM token tapıldı:', fcmToken.slice(0,20)+'...');
-              const status = await sendFCM(accessToken, fcmToken, title, body);
-              console.log('Status:', status===200?'Uğurlu!':'Xəta: '+status);
+              const tokenData   = await fbGet('fcm_tokens/'+workerId);
+              if(!tokenData?.token){ console.log('FCM token yoxdur:', workerId); process.exit(0); }
+              await sendFCM(tokenData.token, accessToken);
+              console.log('Bildiriş göndərildi ✓');
             } catch(e) {
               console.error('Xəta:', e.message);
               process.exit(1);
             }
           })();
-          "
+          EOF
