@@ -21,11 +21,11 @@ jobs:
             const req = https.request({
               hostname:'api.telegram.org', path:'/bot'+BOT+'/'+method,
               method:'POST', headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
-            }, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>res(JSON.parse(d))); });
-            req.on('error',rej); req.write(body); req.end();
+            }, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>{ try{res(JSON.parse(d));}catch(e){res({ok:false});} }); });
+            req.on('error',()=>res({ok:false})); req.write(body); req.end();
           });
 
-          const fbGet = path => new Promise((res) => {
+          const fbGet = path => new Promise(res => {
             const req = https.request({hostname:DB, path:'/'+path+'.json', method:'GET'},
               r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>{ try{res(JSON.parse(d));}catch(e){res(null);} }); });
             req.on('error',()=>res(null)); req.end();
@@ -40,43 +40,87 @@ jobs:
             req.on('error',rej); req.write(body); req.end();
           });
 
+          const fbPatch = (path, data) => new Promise((res,rej) => {
+            const body = JSON.stringify(data);
+            const req = https.request({
+              hostname:DB, path:'/'+path+'.json', method:'PATCH',
+              headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+            }, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>res(JSON.parse(d))); });
+            req.on('error',rej); req.write(body); req.end();
+          });
+
           (async () => {
             const lastOffset = await fbGet('tg_bot/last_offset') || 0;
             const updates = await tg('getUpdates', {offset: lastOffset+1, timeout:3});
             if(!updates.ok || !updates.result.length) { console.log('No updates'); return; }
 
             for(const upd of updates.result) {
+              // ── Adi mesaj ──────────────────────────────────────────────────
               const msg = upd.message;
-              if(!msg) continue;
-              const chatId = msg.chat.id;
-              const text = msg.text || '';
+              if(msg) {
+                const chatId = msg.chat.id;
+                const text = msg.text || '';
 
-              if(text.startsWith('/start')) {
-                const parts = text.split(' ');
-                const param = parts[1] || ''; // worker_ID parametri
+                if(text.startsWith('/start')) {
+                  const param = (text.split(' ')[1] || '');
+                  let replyText = '👋 Salam!\n\n🔑 Sizin Telegram ID:\n<code>'+chatId+'</code>\n\nPPC İşçi Portalında Profil bölməsinə daxil edin.';
 
-                let replyText = '👋 Salam!\n\n🔑 Sizin Telegram ID:\n<code>'+chatId+'</code>\n\nPPC İşçi Portalında Profil bölməsinə daxil edin.';
-
-                if(param.startsWith('worker_')) {
-                  const workerId = param.replace('worker_','');
-                  // Firebase-ə işçi ID-si ilə yaz
-                  await fbSet('tg_pending/'+chatId, {
-                    chatId: String(chatId),
-                    workerId: workerId,
-                    name: msg.from.first_name+' '+(msg.from.last_name||''),
-                    ts: Date.now()
-                  });
-                  // tg_ids-ə də birbaşa yaz
-                  await fbSet('tg_ids/'+workerId, {
-                    chatId: String(chatId),
-                    name: msg.from.first_name+' '+(msg.from.last_name||''),
-                    workerId: workerId,
-                    ts: Date.now()
-                  });
-                  replyText = '✅ Uğurla qoşuldunuz!\n\nArtıq yeni tapşırıqlarda Telegram bildirişi alacaqsınız. 🎉';
+                  if(param.startsWith('worker_')) {
+                    const workerId = param.replace('worker_','');
+                    await fbSet('tg_pending/'+chatId, {
+                      chatId:String(chatId), workerId,
+                      name: msg.from.first_name+' '+(msg.from.last_name||''), ts:Date.now()
+                    });
+                    await fbSet('tg_ids/'+workerId, {
+                      chatId:String(chatId), workerId,
+                      name: msg.from.first_name+' '+(msg.from.last_name||''), ts:Date.now()
+                    });
+                    replyText = '✅ Uğurla qoşuldunuz!\n\nArtıq yeni tapşırıqlarda Telegram bildirişi alacaqsınız. 🎉';
+                  }
+                  await tg('sendMessage', {chat_id:chatId, text:replyText, parse_mode:'HTML'});
                 }
+              }
 
-                await tg('sendMessage', {chat_id:chatId, text:replyText, parse_mode:'HTML'});
+              // ── Inline düymə callback ───────────────────────────────────────
+              const cb = upd.callback_query;
+              if(cb) {
+                const data = cb.data || '';
+                const chatId = cb.message.chat.id;
+                const msgId  = cb.message.message_id;
+
+                // Format: done:taskId:workerId  və ya  notdone:taskId:workerId
+                const parts = data.split(':');
+                const action   = parts[0]; // done / notdone
+                const taskId   = parts[1];
+                const workerId = parts[2];
+
+                if(action === 'done' || action === 'notdone') {
+                  const isDone = action === 'done';
+
+                  // Firebase-ə yaz
+                  await fbPatch('ppcdata/tasks/'+taskId, {
+                    done: isDone,
+                    icraci_status: isDone ? 'gozleyir' : null,
+                    done_ts: isDone ? Date.now() : null
+                  });
+
+                  // Mesajı yenilə
+                  const newText = cb.message.text + '\n\n' + (isDone ? '✅ Tamamlandı olaraq qeyd edildi — İcraci gözləyir' : '↩️ Tapşırıq geri qaytarıldı');
+                  await tg('editMessageText', {
+                    chat_id: chatId,
+                    message_id: msgId,
+                    text: newText,
+                    parse_mode: 'HTML'
+                  });
+
+                  // Callback-ə cavab ver (saat işarəsi getsin)
+                  await tg('answerCallbackQuery', {
+                    callback_query_id: cb.id,
+                    text: isDone ? '✅ Tamamlandı!' : '↩️ Geri qaytarıldı'
+                  });
+
+                  console.log('Task updated:', taskId, action);
+                }
               }
 
               await fbSet('tg_bot/last_offset', upd.update_id);
