@@ -3037,7 +3037,7 @@ const GITHUB_TOKEN = (()=>{
   try{ return localStorage.getItem('ppc_gh_token')||''; }catch(e){ return ''; }
 })();
 
-async function sendTaskNotification(workerId, taskName, assignerName) {
+async function sendTaskNotification(workerId, taskName, assignerName, taskId) {
   if(!workerId) return;
 
   // 1. Firebase DB-ə notification yaz (portal açıqdırsa görsün)
@@ -3058,7 +3058,8 @@ async function sendTaskNotification(workerId, taskName, assignerName) {
   const ok = await triggerGitHubAction(
     ghTok, workerId,
     '📋 Yeni Tapşırıq',
-    (assignerName||'Admin') + ' sizə tapşırıq verdi: ' + taskName
+    (assignerName||'Admin') + ' sizə tapşırıq verdi: ' + taskName,
+    taskId
   );
   console.log('[Bildiriş]', ok ? 'Göndərildi ✓' : 'Xəta', workerId);
 }
@@ -3148,10 +3149,11 @@ function getGHToken(){
   return tok;
 }
 
-async function triggerGitHubAction(token, workerId, title, body) {
-  console.log('[GitHub] dispatch göndərilir, token:', token?token.slice(0,10)+'...':'YOX!');
-  if(!token){ console.error('[GitHub] TOKEN YOX!'); return false; }
+async function triggerGitHubAction(token, workerId, title, body, taskId) {
+  if(!token){ console.warn('[GitHub] Token yoxdur'); return false; }
   try {
+    const payload = { workerId, title, body };
+    if(taskId) payload.taskId = taskId;
     const resp = await fetch(
       'https://api.github.com/repos/kamuranmm/ppcbusiness/dispatches',
       {
@@ -3162,16 +3164,13 @@ async function triggerGitHubAction(token, workerId, title, body) {
           'Content-Type':  'application/json',
           'X-GitHub-Api-Version': '2022-11-28'
         },
-        body: JSON.stringify({
-          event_type: 'send-notification',
-          client_payload: { workerId, title, body }
-        })
+        body: JSON.stringify({ event_type:'send-notification', client_payload:payload })
       }
     );
-    console.log('[GitHub] Status:', resp.status, resp.status===204?'✓ Uğurlu':'✗ Xəta');
+    console.log('[GitHub] Status:', resp.status===204?'✓':'✗', resp.status);
     return resp.status===204;
   } catch(e){
-    console.error('[GitHub] Fetch xətası:', e.message);
+    console.error('[GitHub] Xəta:', e.message);
     return false;
   }
 }
