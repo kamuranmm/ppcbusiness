@@ -677,15 +677,38 @@ function startListener() {
     }
   });
 
-  // Digər məlumatları ppcdata/-dən oxu (tasks-a toxunma!)
+  // ppcdata/-dən oxu
   onValue(ref(db,'ppcdata'), snap => {
     const d = snap.val();
     if(d) {
       if(d.workers)  S.workers   = toArr(d.workers);
       if(d.hedefler) S.hedefler  = toArr(d.hedefler);
       if(d.rehberler)S.rehberler = toArr(d.rehberler);
-      // tasks-ı ayrıca listener oxuyur — burda toxunma
     }
+
+    // Öz məlumatımı yenilə — vəzifə dəyişibsə
+    if(ME && d?.workers) {
+      const fresh = toArr(d.workers).find(w => w.id === ME.id);
+      if(fresh) {
+        const wasIcraci = ME.is_icraci;
+        ME = { ...ME, ...fresh };
+
+        // İcraci Direktor oldu — Təsdiq navini göstər
+        if(!wasIcraci && ME.is_icraci) {
+          const tesdiqNav = document.getElementById('tesdiq-nav');
+          if(tesdiqNav) {
+            tesdiqNav.style.display = '';
+            toast('✅ İcraçı Direktor səlahiyyəti verildi!', 'success');
+          }
+        }
+        // İcraçı Direktor deyilsə — nav-ı gizlə
+        if(!ME.is_icraci) {
+          const tesdiqNav = document.getElementById('tesdiq-nav');
+          if(tesdiqNav) tesdiqNav.style.display = 'none';
+        }
+      }
+    }
+
     if(ME) { updateSidebar(); renderCurrentPage(); }
   });
 }
