@@ -1982,15 +1982,17 @@ window.renderFilialStat = function() {
   document.getElementById('fs-month-label').textContent = MONTHS[selMonth]+' '+selYear;
 
   // Bu ay + əvvəlki ay məlumatları
-  const thisMonthData = S.pasientler.filter(p=>p.month===selMonth&&p.year===selYear);
-  const prevMonthData = S.pasientler.filter(p=>p.month===prevMonth&&p.year===prevYear);
+  // S.pasientler Firebase-dən gəlir — object ola bilər
+  const pasArr = Array.isArray(S.pasientler) ? S.pasientler : Object.values(S.pasientler||{});
+  const thisMonthData = pasArr.filter(p=>p.month===selMonth&&p.year===selYear);
+  const prevMonthData = pasArr.filter(p=>p.month===prevMonth&&p.year===prevYear);
 
   // Hər filial üçün hesabla
   const allBranches = BRANCHES;
   let byBranch = allBranches.map((branch,bi)=>{
     const bWorkers = S.workers.filter(w=>w.branch===branch);
-    const thisTotal = thisMonthData.filter(p=>p.branch===branch||bWorkers.some(w=>w.id===p.wid)).reduce((s,p)=>s+p.count,0);
-    const prevTotal = prevMonthData.filter(p=>p.branch===branch||bWorkers.some(w=>w.id===p.wid)).reduce((s,p)=>s+p.count,0);
+    const thisTotal = thisMonthData.filter(p=>p.branch===branch||bWorkers.some(w=>w.id===p.wid)).reduce((s,p)=>s+(parseInt(p.count)||0),0);
+    const prevTotal = prevMonthData.filter(p=>p.branch===branch||bWorkers.some(w=>w.id===p.wid)).reduce((s,p)=>s+(parseInt(p.count)||0),0);
     const psixCount = bWorkers.filter(w=>['Psixoloq','Baş Psixoloq','Loqoped','Diaqnostika'].some(r=>w.role.includes(r))).length;
     const workerCount = bWorkers.length;
     return {branch, thisTotal, prevTotal, psixCount, workerCount, color:BCOLS[bi], bi};
