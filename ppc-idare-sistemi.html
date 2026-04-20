@@ -1812,32 +1812,23 @@ function renderReport() {
 
 // ── MODALS ────────────────────────────────────────────────────────────────────
 async function populateWorkerSelects() {
-  // Firebase-dən təsdiqlənmiş işçiləri yüklə
+  // Yalnız ppcdata/workers-dən götür — müraciətdən yox
+  // Bu ID uyğunluğunu təmin edir
   let allWorkers = [...S.workers];
-  try {
-    const snap = await get(ref(db,'isci_muraciatleri'));
-    const data = snap.val()||{};
-    const approved = Object.values(data).filter(m=>m.status==='approved');
-    approved.forEach(m=>{
-      const wid = m.workerId||'w_mur_'+(m.id||'').replace('mur_','');
-      if(!allWorkers.find(w=>w.id===wid||w.username===m.username)){
-        allWorkers.push({
-          id: wid,
-          name: m.ad+' '+m.soyad,
-          role: m.vezife,
-          dept: m.vezife,
-          branch: m.filial,
-          username: m.username,
-          color:'#1E5FAD'
-        });
-      }
-    });
-  } catch(e){}
+
+  // Əgər S.workers boşdursa Firebase-dən yüklə
+  if(!allWorkers.length && db) {
+    try {
+      const snap = await get(ref(db,'ppcdata/workers'));
+      const d = snap.val();
+      if(d) allWorkers = Object.values(d).filter(x=>x&&x.id);
+    } catch(e){}
+  }
 
   ['t-worker'].forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
     const prev=el.value;
-    el.innerHTML=allWorkers.map(w=>`<option value="${w.id}">${w.name} — ${w.role}</option>`).join('');
+    el.innerHTML=allWorkers.map(w=>`<option value="${w.id}">${w.name} — ${w.role||''}</option>`).join('');
     if(prev) el.value=prev;
   });
 }
@@ -2847,13 +2838,21 @@ async function renderMuraciatler() {
           <div style="font-size:10.5px;color:var(--text3)">@${m.username} · ${m.vezife}</div>
         </div>
         <span class="badge b-green">✓ Aktiv</span>
+        <button onclick="changeVezife('${m.id}','${m.vezife}')" 
+          style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10.5px;cursor:pointer;color:var(--text2);font-family:inherit"
+          title="Vəzifəni dəyiş">✏️</button>
       </div>`).join('')
       : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Hələ təsdiqlənmiş yoxdur</div>';
 
     // Cədvəl
     document.getElementById('mur-table').innerHTML = all.map(m=>`<tr>
       <td class="primary">${m.ad} ${m.soyad}</td>
-      <td>${m.vezife}</td>
+      <td>
+        <span>${m.vezife}</span>
+        <button onclick="changeVezife('${m.id}','${m.vezife}')"
+          style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);margin-left:4px"
+          title="Dəyiş">✏️</button>
+      </td>
       <td>${m.filial}</td>
       <td style="font-family:monospace;font-size:12px">@${m.username}</td>
       <td>
@@ -3358,6 +3357,60 @@ window.previewGiftImg = function(input) {
     if(preview) preview.innerHTML = '<img src="'+e.target.result+'" style="max-height:60px;max-width:120px;border-radius:6px;object-fit:cover">';
   };
   reader.readAsDataURL(file);
+};
+
+// ── VƏZİFƏ DƏYİŞ ─────────────────────────────────────────────────────────────
+const VEZIFELER = [
+  'Psixoloq','Baş Psixoloq','Zəng Mərkəzi Operatoru','Satış Meneceri',
+  'Marketinq Meneceri','Sosial Media Meneceri','Loqoped','İdman Müəllimi',
+  'Resepsion','İcraçı Direktor','HR Mütəxəssisi','Layihə Meneceri','Digər'
+];
+
+window.changeVezife = async function(muraciatId, currentVezife) {
+  // Modal yarat
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;padding:24px;min-width:300px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+      <div style="font-size:15px;font-weight:700;margin-bottom:16px">Vəzifəni dəyiş</div>
+      <select id="vezife-select" class="fs" style="width:100%;margin-bottom:16px">
+        ${VEZIFELER.map(v=>`<option value="${v}" ${v===currentVezife?'selected':''}>${v}</option>`).join('')}
+      </select>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="this.closest('div[style*=fixed]').remove()" class="btn btn-ghost">Ləğv et</button>
+        <button onclick="saveVezife('${muraciatId}')" class="btn btn-primary">Saxla</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+};
+
+window.saveVezife = async function(muraciatId) {
+  const newVezife = document.getElementById('vezife-select')?.value;
+  if(!newVezife) return;
+
+  // Müraciəti yenilə
+  if(db) await update(ref(db,'isci_muraciatleri/'+muraciatId), {vezife: newVezife}).catch(()=>{});
+
+  // workers siyahısında da yenilə
+  const murSnap = await get(ref(db,'isci_muraciatleri/'+muraciatId));
+  const m = murSnap.val();
+  if(m?.workerId) {
+    const wIdx = S.workers.findIndex(x=>x.id===m.workerId);
+    if(wIdx>=0) {
+      S.workers[wIdx].role = newVezife;
+      S.workers[wIdx].dept = newVezife;
+      // Firebase workers-ə yaz
+      const wObj = {};
+      S.workers.forEach(w=>{if(w?.id) wObj[w.id]=w;});
+      if(db) set(ref(db,'ppcdata/workers'), wObj).catch(()=>{});
+    }
+  }
+
+  // Modal bağla
+  document.querySelector('div[style*="position:fixed"][style*="inset:0"]')?.remove();
+  toast('Vəzifə dəyişdirildi ✓', 'success');
+  renderMuraciatler();
 };
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
