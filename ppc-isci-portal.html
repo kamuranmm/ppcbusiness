@@ -511,10 +511,30 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
       <!-- TƏSDİQ LOVHƏSI (İcraci Direktor) -->
       <div id="page-tesdiq" class="page">
+        <!-- Günlük pasiyent daxiletmə -->
+        <div class="card" style="margin-bottom:12px;border:1.5px solid #1E5FAD">
+          <div class="card-hdr">
+            <span class="card-title">📊 Günlük Pasiyent Qeydi</span>
+            <span style="font-size:10.5px;color:var(--text3)" id="tesdiq-filial"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+            <div style="flex:1">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Bu gün davam edən pasiyent sayı</div>
+              <input type="number" id="gunluk-pasiyent" min="0" placeholder="0"
+                style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;color:var(--text);background:var(--surface2);outline:none;text-align:center">
+            </div>
+            <button onclick="saveGunlukPasiyent()"
+              style="padding:10px 16px;background:#1E5FAD;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+              💾 Qeyd et
+            </button>
+          </div>
+          <div id="gunluk-status" style="margin-top:8px;font-size:11px;color:var(--text3)"></div>
+        </div>
+
+        <!-- Tapşırıq Təsdiq -->
         <div class="card">
           <div class="card-hdr">
             <span class="card-title">✅ Tapşırıq Təsdiq Lovhəsi</span>
-            <span style="font-size:11px;color:var(--text3)" id="tesdiq-filial"></span>
           </div>
           <div id="tesdiq-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
         </div>
@@ -1361,6 +1381,7 @@ function renderMyHedefler(){
 // ── TƏSDİQ LOVHƏSI ───────────────────────────────────────────────────────────
 function renderTesdiq() {
   if(!ME?.is_icraci) return;
+  loadGunlukPasiyent();
 
   // Filialın gözləyən tapşırıqları
   const pending = S.tasks.filter(t => {
@@ -1465,6 +1486,60 @@ window.showInstallGuide = function(platform) {
   document.body.appendChild(overlay);
   overlay.onclick = e => { if(e.target === overlay) overlay.remove(); };
 };
+
+// ── GÜNLÜK PASİYENT QEYDİ (İcraci Direktor) ────────────────────────────────
+window.saveGunlukPasiyent = async function() {
+  const val = parseInt(document.getElementById('gunluk-pasiyent')?.value);
+  if(isNaN(val) || val < 0) { toast('Düzgün rəqəm daxil edin', 'error'); return; }
+
+  if(!ME?.is_icraci || !ME?.branch) { toast('Yalnız İcraci Direktor üçün', 'error'); return; }
+
+  const now   = new Date();
+  const today = now.toISOString().slice(0,10); // YYYY-MM-DD
+  const month = now.getMonth() + 1;
+  const year  = now.getFullYear();
+
+  const record = {
+    branch: ME.branch,
+    wid:    ME.id,
+    count:  val,
+    date:   today,
+    month,
+    year,
+    ts:     Date.now()
+  };
+
+  // Firebase-ə yaz — ppcdata/pasientler altına
+  if(db) {
+    const key = 'pasiyent_' + ME.branch.replace(/[^a-z0-9]/gi,'_') + '_' + today;
+    await set(ref(db, 'ppcdata/pasientler/' + key), record).catch(()=>{});
+  }
+
+  // Status göstər
+  const statusEl = document.getElementById('gunluk-status');
+  if(statusEl) statusEl.innerHTML = '✅ <b>' + val + '</b> pasiyent — ' + today + ' tarixinə qeyd edildi';
+
+  toast('Günlük pasiyent qeyd edildi ✓', 'success');
+};
+
+// Təsdiq səhifəsi açılanda mövcud günlük qeydi yüklə
+async function loadGunlukPasiyent() {
+  if(!ME?.is_icraci || !db) return;
+  const today = new Date().toISOString().slice(0,10);
+  const key = 'pasiyent_' + ME.branch.replace(/[^a-z0-9]/gi,'_') + '_' + today;
+  try {
+    const snap = await get(ref(db, 'ppcdata/pasientler/' + key));
+    const d = snap.val();
+    const input = document.getElementById('gunluk-pasiyent');
+    const statusEl = document.getElementById('gunluk-status');
+    if(d?.count !== undefined) {
+      if(input) input.value = d.count;
+      if(statusEl) statusEl.innerHTML = '✅ Bu gün üçün <b>' + d.count + '</b> pasiyent qeyd edilib';
+    } else {
+      if(statusEl) statusEl.textContent = 'Bu gün hələ qeyd edilməyib';
+    }
+  } catch(e) {}
+}
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast=function(msg,type=''){
