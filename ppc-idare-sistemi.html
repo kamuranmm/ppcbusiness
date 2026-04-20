@@ -867,10 +867,7 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
     </div>
     <div class="fg"><label class="fl">Email</label><input class="fi" id="w-email" type="email" placeholder="leyla@ppc.az"></div>
-    <div class="fg" style="flex-direction:row;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px">
-      <input type="checkbox" id="w-icraci" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
-      <label for="w-icraci" style="font-size:12px;color:var(--text2);cursor:pointer;margin:0">İcraci Direktor — filial tapşırıqlarını təsdiq edə bilər</label>
-    </div>
+    
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-worker')">Ləğv et</button>
       <button class="btn btn-primary" onclick="saveWorker()">Əlavə et</button>
@@ -1932,14 +1929,15 @@ window.saveTask = function() {
 window.saveWorker = function() {
   const name=document.getElementById('w-name').value.trim();
   if(!name){toast('Ad daxil edin','error');return;}
+  const role = document.getElementById('w-role').value;
   S.workers.push({
     id:'w'+Date.now(), name,
-    role:     document.getElementById('w-role').value,
+    role,
     dept:     document.getElementById('w-dept').value,
     branch:   document.getElementById('w-branch').value,
     email:    document.getElementById('w-email').value,
     color:    COLORS[S.workers.length%COLORS.length],
-    is_icraci: document.getElementById('w-icraci')?.checked || false,
+    is_icraci: role === 'İcraçı Direktor',
   });
   saveState(); closeModal('modal-worker'); refreshAll();
   toast(`${name} sisteme əlavə edildi ✓`,'success');
@@ -2900,7 +2898,8 @@ window.approveWorker = async function(id) {
       username: m.username,
       email: m.username+'@ppc.az',
       tel: m.tel||'',
-      isNew: true
+      isNew: true,
+      is_icraci: m.vezife === 'İcraçı Direktor',
     };
 
     // ppcdata/workers-ə əlavə et
