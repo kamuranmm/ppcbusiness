@@ -522,6 +522,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
       <!-- PROFİL -->
       <div id="page-profile" class="page">
+        <!-- App yükləmə -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-hdr"><span class="card-title">📲 Tətbiqi quraşdır</span></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button onclick="showInstallGuide('android')"
+              style="flex:1;padding:11px 8px;background:#1a1a2e;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#3DDC84"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.46 11.46 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.55-.22.83L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>
+              Android
+            </button>
+            <button onclick="showInstallGuide('ios')"
+              style="flex:1;padding:11px 8px;background:#1a1a2e;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+              iPhone (iOS)
+            </button>
+          </div>
+        </div>
 
 
         <div class="card" style="margin-bottom:14px">
@@ -1397,6 +1413,59 @@ window.workerTesdiq = async function(taskId, tesdiq) {
   toast(tesdiq ? '✅ Tapşırıq təsdiqləndi' : '❌ Tapşırıq geri qaytarıldı', tesdiq?'success':'');
 };
 
+// ── TƏTBİQ QURAŞDIRMA REHBƏRİ ───────────────────────────────────────────────
+window.showInstallGuide = function(platform) {
+  const isAndroid = platform === 'android';
+
+  const steps = isAndroid ? [
+    {icon:'🌐', text:'Chrome brauzeri ilə bu linki aç:<br><b style="color:#60A5FA">adminpanel.mycontact.az/ppc-isci-portal.html</b>'},
+    {icon:'⋮', text:'Yuxarı sağda <b>3 nöqtə (⋮)</b> menyusuna bas'},
+    {icon:'📲', text:'<b>"Ana ekrana əlavə et"</b> seçimini tap'},
+    {icon:'✅', text:'<b>"Əlavə et"</b> düyməsinə bas — tətbiq quraşdırılır!'},
+    {icon:'🎉', text:'Telefon ekranında <b>PPC ikonu</b> görünəcək'},
+  ] : [
+    {icon:'🌐', text:'<b>Safari</b> brauzeri ilə bu linki aç:<br><b style="color:#60A5FA">adminpanel.mycontact.az/ppc-isci-portal.html</b>'},
+    {icon:'📤', text:'Aşağıda <b>Paylaş (□↑)</b> düyməsinə bas'},
+    {icon:'🏠', text:'Siyahıda <b>"Ana ekrana əlavə et"</b> tap'},
+    {icon:'✅', text:'Sağ yuxarıda <b>"Əlavə et"</b> düyməsinə bas'},
+    {icon:'🎉', text:'iPhone ekranında <b>PPC ikonu</b> görünəcək'},
+  ];
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+  
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:16px;font-weight:700">${isAndroid ? '🤖 Android' : '🍎 iPhone'} — Quraşdırma</div>
+        <button onclick="this.closest('div[style*=fixed]').remove()" 
+          style="background:var(--surface2);border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        ${steps.map((s,i) => `
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${i+1}</div>
+            <div style="flex:1;padding-top:6px">
+              <div style="font-size:13px;line-height:1.5;color:var(--text)">${s.text}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div style="margin-top:20px;padding:12px;background:var(--surface2);border-radius:10px;font-size:11.5px;color:var(--text3);text-align:center">
+        ${isAndroid ? '⚠️ Yalnız Chrome brauzeri ilə işləyir' : '⚠️ Yalnız Safari brauzeri ilə işləyir'}
+      </div>
+
+      <button onclick="this.closest('div[style*=fixed]').remove()"
+        style="width:100%;margin-top:16px;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+        Anladım ✓
+      </button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if(e.target === overlay) overlay.remove(); };
+};
+
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 window.toast=function(msg,type=''){
   const t=document.getElementById('toast');
@@ -1547,6 +1616,59 @@ window.workerTesdiq = async function(taskId, tesdiq) {
   renderTesdiq();
   renderCurrentPage();
   toast(tesdiq ? '✅ Tapşırıq təsdiqləndi' : '❌ Tapşırıq geri qaytarıldı', tesdiq?'success':'');
+};
+
+// ── TƏTBİQ QURAŞDIRMA REHBƏRİ ───────────────────────────────────────────────
+window.showInstallGuide = function(platform) {
+  const isAndroid = platform === 'android';
+
+  const steps = isAndroid ? [
+    {icon:'🌐', text:'Chrome brauzeri ilə bu linki aç:<br><b style="color:#60A5FA">adminpanel.mycontact.az/ppc-isci-portal.html</b>'},
+    {icon:'⋮', text:'Yuxarı sağda <b>3 nöqtə (⋮)</b> menyusuna bas'},
+    {icon:'📲', text:'<b>"Ana ekrana əlavə et"</b> seçimini tap'},
+    {icon:'✅', text:'<b>"Əlavə et"</b> düyməsinə bas — tətbiq quraşdırılır!'},
+    {icon:'🎉', text:'Telefon ekranında <b>PPC ikonu</b> görünəcək'},
+  ] : [
+    {icon:'🌐', text:'<b>Safari</b> brauzeri ilə bu linki aç:<br><b style="color:#60A5FA">adminpanel.mycontact.az/ppc-isci-portal.html</b>'},
+    {icon:'📤', text:'Aşağıda <b>Paylaş (□↑)</b> düyməsinə bas'},
+    {icon:'🏠', text:'Siyahıda <b>"Ana ekrana əlavə et"</b> tap'},
+    {icon:'✅', text:'Sağ yuxarıda <b>"Əlavə et"</b> düyməsinə bas'},
+    {icon:'🎉', text:'iPhone ekranında <b>PPC ikonu</b> görünəcək'},
+  ];
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+  
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:16px;font-weight:700">${isAndroid ? '🤖 Android' : '🍎 iPhone'} — Quraşdırma</div>
+        <button onclick="this.closest('div[style*=fixed]').remove()" 
+          style="background:var(--surface2);border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        ${steps.map((s,i) => `
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${i+1}</div>
+            <div style="flex:1;padding-top:6px">
+              <div style="font-size:13px;line-height:1.5;color:var(--text)">${s.text}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div style="margin-top:20px;padding:12px;background:var(--surface2);border-radius:10px;font-size:11.5px;color:var(--text3);text-align:center">
+        ${isAndroid ? '⚠️ Yalnız Chrome brauzeri ilə işləyir' : '⚠️ Yalnız Safari brauzeri ilə işləyir'}
+      </div>
+
+      <button onclick="this.closest('div[style*=fixed]').remove()"
+        style="width:100%;margin-top:16px;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+        Anladım ✓
+      </button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if(e.target === overlay) overlay.remove(); };
 };
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
