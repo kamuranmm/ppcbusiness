@@ -3399,12 +3399,17 @@ window.saveVezife = async function(muraciatId) {
   if(m?.workerId) {
     const wIdx = S.workers.findIndex(x=>x.id===m.workerId);
     if(wIdx>=0) {
-      S.workers[wIdx].role = newVezife;
-      S.workers[wIdx].dept = newVezife;
+      S.workers[wIdx].role      = newVezife;
+      S.workers[wIdx].dept      = newVezife;
+      S.workers[wIdx].is_icraci = (newVezife === 'İcraçı Direktor');
       // Firebase workers-ə yaz
-      const wObj = {};
-      S.workers.forEach(w=>{if(w?.id) wObj[w.id]=w;});
-      if(db) set(ref(db,'ppcdata/workers'), wObj).catch(()=>{});
+      if(db) {
+        await update(ref(db,'ppcdata/workers/'+m.workerId), {
+          role:      newVezife,
+          dept:      newVezife,
+          is_icraci: (newVezife === 'İcraçı Direktor')
+        }).catch(()=>{});
+      }
     }
   }
 
