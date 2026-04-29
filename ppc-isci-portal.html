@@ -406,10 +406,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         Təsdiq
         <span id="tesdiq-badge" style="position:absolute;top:4px;right:4px;background:#D94F3D;color:#fff;font-size:8px;padding:1px 4px;border-radius:8px;display:none"></span>
       </button>
+      <button class="nav-item" onclick="goPage('teklif',this)">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Tekliflerim
+        <span class="nav-badge" id="teklif-badge" style="background:#E8931A;display:none">!</span>
+      </button>
       <a id="tg-nav-link" href="https://t.me/Ppcbusiness_bot" target="_blank"
         class="nav-item" style="text-decoration:none;color:inherit;background:rgba(43,116,212,.25);border:1px solid rgba(43,116,212,.4)">
         <svg class="nav-ic" viewBox="0 0 24 24" fill="currentColor" style="color:#60A5FA"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.94z"/></svg>
-        <span style="color:#60A5FA;font-size:9px">Qoş</span>
+        <span style="color:#60A5FA;font-size:9px">Qos</span>
       </a>
 
     </nav>
@@ -492,6 +497,41 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
           <button class="tab-btn" onclick="filterMyTasks('kurator',this)">👑 Kuratordan</button>
         </div>
         <div class="card"><div id="task-list"></div></div>
+      </div>
+
+      <!-- TEKLİFLƏR -->
+      <div id="page-teklif" class="page">
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-title">💡 Yeni Teklif</span>
+          </div>
+          <div style="margin-top:8px">
+            <div style="margin-bottom:10px">
+              <label style="font-size:11.5px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px">Teklif Novü</label>
+              <select id="teklif-tur" style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:10px;font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);outline:none">
+                <option value="Layihe">Layihe / Ide</option>
+                <option value="Sistem">Sistem Tekmillesdirmesi</option>
+                <option value="Musteqi">Musteri Xidmeti</option>
+                <option value="Diger">Diger</option>
+              </select>
+            </div>
+            <div style="margin-bottom:10px">
+              <label style="font-size:11.5px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px">Baslig</label>
+              <input id="teklif-baslig" type="text" placeholder="Teklif basligini yaz..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:10px;font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;box-sizing:border-box">
+            </div>
+            <div style="margin-bottom:14px">
+              <label style="font-size:11.5px;color:var(--text3);font-weight:600;display:block;margin-bottom:4px">Acıqlama</label>
+              <textarea id="teklif-metn" rows="4" placeholder="Teklifi etrafli aciqla..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:10px;font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;resize:none;box-sizing:border-box"></textarea>
+            </div>
+            <button onclick="submitTeklif()" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--navy);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+              Teklif Gonder
+            </button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="card-hdr"><span class="card-title">📋 Gonderdiklerim</span></div>
+          <div id="my-teklifler-list" style="margin-top:6px"></div>
+        </div>
       </div>
 
       <!-- HISTORY -->
@@ -1175,6 +1215,7 @@ function updateSidebar() {
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 let curPage='overview';
 window.goPage=function(id,el){
+  if(id==='teklif') { setTimeout(renderMyTeklifler,100); }
   curPage=id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -1218,8 +1259,8 @@ function renderOverview() {
 
   // Today tasks
   document.getElementById('ov-today').innerHTML=td.length ? td.map(t=>`
-    <div class="task-row" onclick="toggleTask('${t.id}')">
-      <div class="tcheck ${t.done?'done':''}">${t.done?'✓':''}</div>
+    <div class="task-row" onclick="showWorkerTaskDetail('${t.id}')" style="cursor:pointer">
+      <div class="tcheck ${t.done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
       <div class="pdot p-${t.priority}"></div>
       <div class="task-name ${t.done?'done':''}" style="font-size:12px">${t.name}</div>
       ${t.fromLeader?`<span class="kt-badge">👑</span>`:''}
@@ -1231,8 +1272,8 @@ function renderOverview() {
   const ktasks = mt.filter(t=>t.fromLeader&&!t.done);
   document.getElementById('ov-kurator').innerHTML = ktasks.length ? ktasks.map(t=>{
     const leader=S.workers.find(w=>w.id===t.fromLeader);
-    return `<div class="task-row" onclick="toggleTask('${t.id}')">
-      <div class="tcheck ${t.done?'done':''}">${t.done?'✓':''}</div>
+    return `<div class="task-row" onclick="showWorkerTaskDetail('${t.id}')" style="cursor:pointer">
+      <div class="tcheck ${t.done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
       <div class="pdot p-${t.priority}"></div>
       <div style="flex:1;min-width:0">
         <div class="task-name ${t.done?'done':''}" style="font-size:12px">${t.name}</div>
@@ -1331,53 +1372,45 @@ window.showWorkerTaskDetail = function(id) {
   const t=S.tasks.find(x=>x.id===id); if(!t) return;
   const td=today();
   const leader=t.fromLeader?S.workers.find(w=>w.id===t.fromLeader):null;
-  const giverName = leader ? leader.name : (t.createdBy||'Admin');
-  const isOver = !t.done && t.deadline < td;
-  const pMap={high:'🔴 Yüksək',med:'🟡 Orta',low:'🟢 Aşağı'};
-  const statusLabel = t.done ? '✅ Tamamlandı' : isOver ? '⚠ Gecikdi' : '🔵 Açıq';
-  const statusBg    = t.done ? '#ECFDF5' : isOver ? '#FEF2F2' : '#EBF2FF';
-  const statusColor = t.done ? '#065F46' : isOver ? 'var(--red)' : 'var(--navy)';
+  const giverName=leader?leader.name:(t.createdBy||'Admin');
+  const isOver=!t.done&&t.deadline<td;
+  const pMap={high:'🔴 Yuksek',med:'🟡 Orta',low:'🟢 Asagi'};
+  const statusLabel=t.done?'Tamamlandi':isOver?'Gecikdi':'Aciq';
+  const statusBg=t.done?'#ECFDF5':isOver?'#FEF2F2':'#EBF2FF';
+  const statusColor=t.done?'#065F46':isOver?'var(--red)':'var(--navy)';
 
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;background:rgba(15,30,60,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:0';
-  ov.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;position:relative;animation:slideUp .25s ease">
-
-    <!-- Drag handle -->
-    <div style="padding:12px 0 0;text-align:center">
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,30,60,.55);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;animation:slideUp .25s ease">
+    <div style="padding:12px 0 4px;text-align:center">
       <div style="width:36px;height:4px;background:#DDE4EF;border-radius:2px;display:inline-block"></div>
     </div>
-
-    <!-- Başlıq -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:14px 20px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:12px 20px 8px">
       <div style="flex:1;margin-right:10px">
         <div style="font-size:16px;font-weight:700;color:var(--text);line-height:1.3">${t.name}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:8px">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px">
           <span>${t.cat}</span>
-          <span style="background:#F0F4FF;color:var(--navy);padding:1px 7px;border-radius:10px;font-weight:600">+${t.pts} xal</span>
-          <span style="background:${statusBg};color:${statusColor};padding:1px 7px;border-radius:10px;font-weight:600">${statusLabel}</span>
+          <span style="background:#F0F4FF;color:var(--navy);padding:1px 8px;border-radius:10px;font-weight:600">+${t.pts} xal</span>
+          <span style="background:${statusBg};color:${statusColor};padding:1px 8px;border-radius:10px;font-weight:600">${statusLabel}</span>
         </div>
       </div>
-      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);padding:0 2px;line-height:1">×</button>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3);line-height:1;padding:0 2px">×</button>
     </div>
 
-    <!-- Qeyd — ən əvvəl, böyük və aydın göstər -->
-    <div style="padding:0 20px 14px">
+    <div style="padding:0 16px 12px">
       ${t.note
         ? `<div style="background:linear-gradient(135deg,#EBF2FF,#F4F7FC);border:1.5px solid #C7D9F5;border-radius:12px;padding:14px 16px">
-             <div style="font-size:10px;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;opacity:.7">📝 Tapşırıq Qeydi / Təlimat</div>
+             <div style="font-size:10px;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;opacity:.75">Tapshiriq Qeydi / Telimat</div>
              <div style="font-size:14px;color:var(--text);line-height:1.65;white-space:pre-wrap;font-weight:500">${t.note}</div>
            </div>`
-        : `<div style="background:#F9FAFB;border-radius:12px;padding:12px 16px;font-size:12px;color:var(--text3);text-align:center;border:1px dashed #DDE4EF">
-             Qeyd yazılmayıb
-           </div>`
+        : `<div style="background:#F9FAFB;border-radius:12px;padding:12px;font-size:12px;color:var(--text3);text-align:center;border:1px dashed #DDE4EF">Qeyd yazilmayib</div>`
       }
     </div>
 
-    <!-- Məlumat kartları -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px 16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 14px">
       <div style="background:#F4F7FC;border-radius:10px;padding:10px">
-        <div style="font-size:9.5px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Tapşırığı Verən</div>
-        <div style="font-size:13px;font-weight:600;color:var(--navy)">${leader?'👑 ':''} ${giverName}</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Tapshiriqi Veren</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy)">${leader?'👑 ':''}${giverName}</div>
       </div>
       <div style="background:#F4F7FC;border-radius:10px;padding:10px">
         <div style="font-size:9.5px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Son Tarix</div>
@@ -1393,22 +1426,75 @@ window.showWorkerTaskDetail = function(id) {
       </div>
     </div>
 
-    <!-- Tamamla düyməsi -->
-    <div style="padding:0 20px 28px">
+    <div style="padding:0 16px 32px">
       ${!t.done
         ? `<button onclick="this.closest('div[style*=fixed]').remove();toggleTask('${t.id}')"
-            style="width:100%;padding:14px;border-radius:13px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(46,139,87,.35)">
-            ✓ Tamamlandı kimi işarələ
+            style="width:100%;padding:14px;border-radius:13px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(46,139,87,.3)">
+            Tamamlandi kimi isaretele
           </button>`
         : `<div style="text-align:center;padding:12px;font-size:13px;color:var(--green);font-weight:600;background:#ECFDF5;border-radius:12px">
-             ✅ Bu tapşırıq artıq tamamlanıb
+             Bu tapshiriq artiq tamamlanib
            </div>`
       }
     </div>
   </div>`;
-  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
   document.body.appendChild(ov);
 };
+
+// ── TEKLİF ──────────────────────────────────────────────────────────────────
+window.submitTeklif = async function() {
+  const baslig = document.getElementById('teklif-baslig').value.trim();
+  const metn   = document.getElementById('teklif-metn').value.trim();
+  const tur    = document.getElementById('teklif-tur').value;
+  if(!baslig) { toast('Baslig yaz!',''); return; }
+  if(!metn)   { toast('Acıqlama yaz!',''); return; }
+  if(!ME||!db) return;
+  const teklif = {
+    id:        't_'+Date.now(),
+    wid:       ME.id,
+    wname:     ME.name,
+    tur, baslig, metn,
+    date:      today(),
+    status:    'gozleyir',
+    createdAt: Date.now()
+  };
+  await set(ref(db,'teklifler/'+teklif.id), teklif);
+  document.getElementById('teklif-baslig').value='';
+  document.getElementById('teklif-metn').value='';
+  toast('Teklif gonderildi! Admin baxacaq.','success');
+  renderMyTeklifler();
+};
+
+function renderMyTeklifler() {
+  if(!ME||!db) return;
+  const el = document.getElementById('my-teklifler-list');
+  if(!el) return;
+  get(ref(db,'teklifler')).then(snap=>{
+    const all = snap.val()||{};
+    const mine = Object.values(all).filter(t=>t.wid===ME.id)
+      .sort((a,b)=>b.createdAt-a.createdAt);
+    if(!mine.length){
+      el.innerHTML='<div style="text-align:center;padding:20px;font-size:12px;color:var(--text3)">Hec bir teklif gondermemisiz</div>';
+      return;
+    }
+    const stMap={gozleyir:'⏳ Gozleyir',baxildi:'👀 Baxildi',qebul:'✅ Qebul Edildi',red:'❌ Imtina'};
+    const stBg={gozleyir:'#FEF3C7',baxildi:'#EBF2FF',qebul:'#ECFDF5',red:'#FEF2F2'};
+    const stCl={gozleyir:'#92400E',baxildi:'var(--navy)',qebul:'#065F46',red:'var(--red)'};
+    el.innerHTML = mine.map(t=>`
+      <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${t.baslig}</div>
+            <div style="font-size:10.5px;color:var(--text3);margin-top:2px">${t.tur} · ${t.date}</div>
+          </div>
+          <span style="background:${stBg[t.status]||'#F4F7FC'};color:${stCl[t.status]||'var(--text3)'};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap">${stMap[t.status]||t.status}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.5">${t.metn}</div>
+        ${t.cavab?`<div style="margin-top:8px;background:#F4F7FC;border-radius:8px;padding:8px;font-size:11.5px;color:var(--text)"><span style="color:var(--navy);font-weight:600">Admin cavabi: </span>${t.cavab}</div>`:''}
+      </div>`).join('');
+  });
+}
 
 window.toggleTask=function(id){
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
