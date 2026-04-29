@@ -400,6 +400,11 @@ tbody tr:hover td{background:var(--surface2)}
         Yeni Müraciətlər
         <span class="nav-badge" id="mur-badge" style="background:var(--green)">0</span>
       </button>
+      <button class="nav-item" onclick="go('teklifler',this)">
+        <svg class="nav-ic" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Tekliflər
+        <span class="nav-badge" id="teklif-admin-badge" style="background:#E8931A;display:none">0</span>
+      </button>
     </div>
   </nav>
 
@@ -748,6 +753,19 @@ tbody tr:hover td{background:var(--surface2)}
           <span class="card-title">💡 Müdaxilə Tövsiyələri</span>
         </div>
         <div id="risk-advice"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ TEKLİFLƏR ══════════ -->
+    <div id="page-teklifler" class="page">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="filterTeklifler('all',this)">Hamisi</button>
+        <button class="tab-btn" onclick="filterTeklifler('gozleyir',this)">Gozleyir</button>
+        <button class="tab-btn" onclick="filterTeklifler('qebul',this)">Qebul</button>
+        <button class="tab-btn" onclick="filterTeklifler('red',this)">Imtina</button>
+      </div>
+      <div class="card">
+        <div id="teklif-admin-list"></div>
       </div>
     </div>
 
@@ -1320,7 +1338,8 @@ function lsLoad() { return null; }
 function loadState() {
   if(!db){ seedData(); refreshAll(); return; }
 
-  // Tapşırıqları dinlə (tasks/ kökündən — ayrıca)
+  listenTeklifler();
+  // Tapşırıqları dinlə (tasks/ kokunden — ayrica)
   onValue(ref(db, 'ppcdata/tasks'), snap => {
     const val = snap.val();
     console.log('[Firebase] tasks:', val ? Object.keys(val).length : 0);
@@ -1379,6 +1398,7 @@ window.go = function(id, el) {
 function renderPage(id) {
   if(id==='dash')      renderDash();
   else if(id==='tasks') renderTasks(taskFilterMode);
+  else if(id==='teklifler') renderTeklifler(teklifFilterMode);
   else if(id==='funnel') renderFunnel();
   else if(id==='workers') renderWorkers(workerFilterMode);
   else if(id==='leader') renderLeader();
@@ -1642,6 +1662,80 @@ window.deleteTask = function(id) {
   renderTasks(taskFilterMode);
   toast('Tapşırıq silindi');
 }
+
+// ── TEKLİFLƏR ─────────────────────────────────────────────────────────────
+let teklifFilterMode = 'all';
+let allTeklifler = {};
+
+function listenTeklifler() {
+  if(!db) return;
+  onValue(ref(db,'teklifler'), snap => {
+    allTeklifler = snap.val()||{};
+    const pending = Object.values(allTeklifler).filter(t=>t.status==='gozleyir').length;
+    const badge = document.getElementById('teklif-admin-badge');
+    if(badge) { badge.textContent=pending; badge.style.display=pending>0?'':'none'; }
+    if(document.getElementById('page-teklifler')?.classList.contains('active')) {
+      renderTeklifler(teklifFilterMode);
+    }
+  });
+}
+
+window.filterTeklifler=function(f,btn) {
+  teklifFilterMode=f;
+  document.querySelectorAll('#page-teklifler .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderTeklifler(f);
+};
+
+function renderTeklifler(f) {
+  let list=Object.values(allTeklifler);
+  if(f!=='all') list=list.filter(t=>t.status===f);
+  list.sort((a,b)=>b.createdAt-a.createdAt);
+  const el=document.getElementById('teklif-admin-list'); if(!el) return;
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">Teklif tapilmadi</div>';return;}
+  const stMap={gozleyir:'Gozleyir',baxildi:'Baxildi',qebul:'Qebul Edildi',red:'Imtina'};
+  const stBg={gozleyir:'#FEF3C7',baxildi:'#EBF2FF',qebul:'#ECFDF5',red:'#FEF2F2'};
+  const stCl={gozleyir:'#92400E',baxildi:'var(--navy)',qebul:'#065F46',red:'var(--red)'};
+  el.innerHTML=list.map(t=>`
+    <div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div style="flex:1;margin-right:10px">
+          <div style="font-size:14px;font-weight:700;color:var(--text)">${t.baslig}</div>
+          <div style="font-size:10.5px;color:var(--text3);margin-top:2px">${t.wname} · ${t.tur} · ${t.date}</div>
+        </div>
+        <span style="background:${stBg[t.status]||'#F4F7FC'};color:${stCl[t.status]||'var(--text3)'};padding:3px 10px;border-radius:10px;font-size:10.5px;font-weight:600;white-space:nowrap">${stMap[t.status]||t.status}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:12px">${t.metn}</div>
+      ${t.cavab?`<div style="background:#F4F7FC;border-radius:8px;padding:10px;font-size:12px;margin-bottom:10px"><span style="color:var(--navy);font-weight:600">Cavabiniz: </span>${t.cavab}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="teklif_cavab('${t.id}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--navy);color:var(--navy);background:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Cavab Yaz</button>
+        <button onclick="teklif_status('${t.id}','qebul')" style="padding:6px 12px;border-radius:8px;border:none;background:#ECFDF5;color:#065F46;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Qebul Et</button>
+        <button onclick="teklif_status('${t.id}','baxildi')" style="padding:6px 12px;border-radius:8px;border:none;background:#EBF2FF;color:var(--navy);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Baxildi</button>
+        <button onclick="teklif_status('${t.id}','red')" style="padding:6px 12px;border-radius:8px;border:none;background:#FEF2F2;color:var(--red);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Imtina</button>
+      </div>
+    </div>`).join('');
+}
+
+window.teklif_status=async function(id,status){
+  await update(ref(db,'teklifler/'+id),{status});
+  toast(status==='qebul'?'Teklif qebul edildi!':status==='red'?'Imtina edildi':'Status yenilendi','success');
+};
+
+window.teklif_cavab=function(id){
+  const t=allTeklifler[id]; if(!t) return;
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,30,60,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:440px">
+    <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px">Cavab Yaz — ${t.baslig}</div>
+    <textarea id="teklif-cavab-metn" rows="4" placeholder="Cavabinizi yazin..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border2);border-radius:10px;font-size:13px;font-family:inherit;color:var(--text);outline:none;resize:none;box-sizing:border-box">${t.cavab||''}</textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">Legv et</button>
+      <button onclick="(async()=>{const v=document.getElementById('teklif-cavab-metn').value.trim();if(!v)return;await update(ref(db,'teklifler/${id}'),{cavab:v,status:'baxildi'});this.closest('div[style*=fixed]').remove();toast('Cavab gonderildi','success');})()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-size:12px;font-weight:600;cursor:pointer">Gonder</button>
+    </div>
+  </div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+};
 
 // ── FUNNEL ────────────────────────────────────────────────────────────────────
 function renderFunnel() {
