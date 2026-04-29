@@ -1515,34 +1515,111 @@ function renderTasks(f) {
   else if(f==='done')    tasks = tasks.filter(t=>t.done);
   else if(f==='overdue') tasks = tasks.filter(t=>!t.done&&t.deadline<td);
 
+  // ── EN TƏZƏ TAPŞIRIQ ƏN BAŞDA ──
+  tasks.sort((a,b)=>{
+    const da=a.date||'', db2=b.date||'';
+    if(da!==db2) return db2.localeCompare(da);
+    return String(b.id).localeCompare(String(a.id));
+  });
+
   document.getElementById('task-badge').textContent = S.tasks.filter(t=>!t.done).length;
   if(!tasks.length){
     document.getElementById('task-list').innerHTML='<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">Tapşırıq tapılmadı</div>';return;
   }
   document.getElementById('task-list').innerHTML = tasks.map(t=>{
     const w = S.workers.find(x=>x.id===t.wid);
+    // Tapşırığı verən (giver)
+    const giverWorker = t.fromLeader ? S.workers.find(x=>x.id===t.fromLeader) : null;
+    const giverName   = giverWorker ? giverWorker.name.split(' ')[0] : (t.createdBy||'Admin');
     const isOver = !t.done && t.deadline < td;
     const dlCls = t.done?'dl-ok':isOver?'dl-over':t.deadline===td?'dl-warn':'';
     const dlTxt = t.done?'Tamamlandı':isOver?'Gecikdi':t.deadline===td?'Bu gün':'';
-    return `<div class="task-row">
-      <div class="tcheck ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+    return `<div class="task-row" onclick="showAdminTaskDetail('${t.id}')" style="cursor:pointer">
+      <div class="tcheck ${t.done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
       <div class="pdot p-${t.priority}"></div>
       <div style="flex:1;min-width:0">
         <div class="task-name ${t.done?'done':''}">${t.name}</div>
-        <div style="font-size:10.5px;color:var(--text3);margin-top:2px">${t.cat} · ${t.deadline||'—'}</div>
+        <div style="font-size:10.5px;color:var(--text3);margin-top:2px">
+          ${t.cat} · ${t.deadline||'—'}
+          ${t.note?'<span style="margin-left:6px;color:var(--blue);font-size:9px">📝</span>':''}
+        </div>
+        <div style="font-size:10px;margin-top:2px;display:flex;gap:8px">
+          <span style="color:var(--text3)">Verən: <span style="color:var(--navy);font-weight:600">${giverName}</span></span>
+          <span style="color:var(--text3)">Alan: <span style="color:var(--text);font-weight:600">${w?.name||'—'}</span></span>
+        </div>
       </div>
       <div class="av av-sm" style="background:${w?.color||'#ccc'}18;color:${w?.color||'#888'};font-size:9px">${initials(w?.name||'?')}</div>
-      <div style="font-size:10px;color:var(--text3);min-width:50px;text-align:right">${w?.name.split(' ')[0]||''}</div>
       ${dlTxt?`<span class="dl-badge ${dlCls}">${dlTxt}</span>`:''}
       ${t.done && t.icraci_status==='gozleyir' ? '<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;white-space:nowrap">⏳ İcraci gözləyir</span>' : ''}
       ${t.done && t.icraci_status==='tesdiq'   ? '<span style="font-size:9px;background:#ECFDF5;color:#065F46;padding:2px 6px;border-radius:4px;white-space:nowrap">✅ Təsdiqləndi</span>' : ''}
       ${t.done && t.icraci_status==='red'      ? '<span style="font-size:9px;background:#FEF2F2;color:#991B1B;padding:2px 6px;border-radius:4px;white-space:nowrap">❌ Geri qaytarıldı</span>' : ''}
       <div class="tpts">+${t.pts}</div>
-      <button onclick="deleteTask('${t.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px" title="Sil">×</button>
-      <button onclick="manualSendNotif('${t.id}')" style="background:none;border:none;color:#1E5FAD;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px" title="Bildiriş göndər">🔔</button>
+      <button onclick="event.stopPropagation();deleteTask('${t.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px" title="Sil">×</button>
+      <button onclick="event.stopPropagation();manualSendNotif('${t.id}')" style="background:none;border:none;color:#1E5FAD;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px" title="Bildiriş göndər">🔔</button>
     </div>`;
   }).join('');
 }
+
+// ── ADMIN TAPŞIRIQ DETALİ ────────────────────────────────────────────────────
+window.showAdminTaskDetail = function(id) {
+  const t = S.tasks.find(x=>x.id===id); if(!t) return;
+  const w = S.workers.find(x=>x.id===t.wid);
+  const giverWorker = t.fromLeader ? S.workers.find(x=>x.id===t.fromLeader) : null;
+  const giverName = giverWorker ? giverWorker.name : (t.createdBy||'Admin');
+  const td = today();
+  const isOver = !t.done && t.deadline < td;
+  const statusHtml = t.done
+    ? '<span style="background:#ECFDF5;color:#065F46;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">✅ Tamamlandı</span>'
+    : isOver
+    ? '<span style="background:#FEF2F2;color:var(--red);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">⚠ Gecikdi</span>'
+    : '<span style="background:#EBF2FF;color:var(--navy);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">🔵 Açıq</span>';
+  const pMap={high:'🔴 Yüksək',med:'🟡 Orta',low:'🟢 Aşağı'};
+
+  const ov = document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,30,60,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">${t.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">${t.cat}</div>
+      </div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:0 4px">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:#F4F7FC;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Tapşırığı Verən</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy)">${giverName}</div>
+      </div>
+      <div style="background:#F4F7FC;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Tapşırığı Alan</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${w?.name||'—'}</div>
+        <div style="font-size:10px;color:var(--text3)">${w?.role||''}</div>
+      </div>
+      <div style="background:#F4F7FC;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Son Tarix</div>
+        <div style="font-size:13px;font-weight:600;color:${isOver?'var(--red)':'var(--text)'}">${t.deadline||'—'}</div>
+      </div>
+      <div style="background:#F4F7FC;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Prioritet · Xal</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${pMap[t.priority]||t.priority} · +${t.pts}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Status</div>
+      ${statusHtml}
+    </div>
+    ${t.note?`<div style="background:#F4F7FC;border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">📝 Qeyd</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.5;white-space:pre-wrap">${t.note}</div>
+    </div>`:'<div style="background:#F9FAFB;border-radius:10px;padding:10px;margin-bottom:14px;font-size:12px;color:var(--text3);text-align:center">Qeyd yoxdur</div>'}
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="this.closest('div[style*=fixed]').remove();toggleTask('${t.id}')" style="padding:8px 16px;border-radius:8px;border:none;background:${t.done?'#FEF2F2':'#ECFDF5'};color:${t.done?'var(--red)':'var(--green)'};font-size:12px;font-weight:600;cursor:pointer">${t.done?'↩ Aç':'✓ Tamamla'}</button>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">Bağla</button>
+    </div>
+  </div>`;
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+};
 
 window.toggleTask = function(id) {
   const t = S.tasks.find(x=>x.id===id); if(!t) return;
@@ -1916,7 +1993,8 @@ window.saveTask = function() {
     deadline:document.getElementById('t-deadline').value,
     done:false,
     note:document.getElementById('t-note').value,
-    date:today()
+    date:today(),
+    createdBy: document.getElementById('sf-name')?.textContent || 'Admin'
   };
   S.tasks.push(newTask);
   fbAddTask(newTask); // Firebase-ə birbaşa yaz
