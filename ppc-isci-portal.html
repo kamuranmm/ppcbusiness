@@ -1023,8 +1023,7 @@ async function registerFCMToken() {
       if(title||body) toast((title||'PPC')+': '+(body||''), 'success');
     });
   } catch(e){
-    console.log('[FCM] XƏTA:', e.message, e.code||'', e.stack?.split('
-')[1]||'');
+    console.log('[FCM] XƏTA:', e.message, e.code||'');
   }
 }
 
