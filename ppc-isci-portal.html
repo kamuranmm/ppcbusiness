@@ -154,6 +154,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* KURATOR TAPŞIRIĞI */
 .kt-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
 
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 /* ══ RESPONSIVE — MOBİL ══════════════════════════════════════════════════ */
 @media(max-width:1000px){
@@ -870,24 +871,34 @@ window.doRegister = async function() {
 
 // ── İŞÇİ PWA + BİLDİRİŞ ──────────────────────────────────────────────────────
 async function initWorkerPWA(workerId) {
-  // Service Worker
+  // Service Worker - explicit scope
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('firebase-messaging-sw.js');
-    } catch(e) {}
+      await navigator.serviceWorker.register('./firebase-messaging-sw.js', {scope: './'});
+    } catch(e) {
+      console.log('[SW] Register error:', e);
+    }
   }
 
-  // Bildiriş icazəsi
-  if ('Notification' in window && Notification.permission === 'default') {
-    setTimeout(requestNotifPermission, 2000);
-  } else if (Notification.permission === 'granted') {
-    await registerFCMToken();
+  // Bildiriş icazəsi + FCM token
+  if ('Notification' in window) {
+    if (Notification.permission === 'granted') {
+      // ── HƏR DƏFƏ AÇILANda TOKEN YENİLƏ (PWA/standalone üçün vacibdir) ──
+      await registerFCMToken();
+    } else if (Notification.permission === 'default') {
+      if (isInStandaloneMode()) {
+        // PWA rejimində dərhal icazə al (iOS/Android standalone)
+        await requestNotifPermission();
+      } else {
+        setTimeout(requestNotifPermission, 2000);
+      }
+    }
   }
 
   // Real-time bildiriş listener
   listenNotifications(workerId);
 
-  // iOS banner
+  // iOS banner - yalnız browser rejimində göstər
   if (isIOS() && !isInStandaloneMode()) showInstallBanner();
 }
 
@@ -930,7 +941,7 @@ function showInstallBanner() {
   const b=document.createElement('div');
   b.id='install-banner';
   b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1B3A6B;color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 -2px 16px rgba(0,0,0,.3)';
-  b.innerHTML=`<img src="ppc-icon-192.png" style="width:38px;height:38px;border-radius:9px;flex-shrink:0"><div style="flex:1"><div style="font-size:12.5px;font-weight:700">Ana ekrana əlavə et</div><div style="font-size:10.5px;opacity:.65;margin-top:1px">Paylaş düyməsi → Ana ekrana əlavə et</div></div><button onclick="this.closest('#install-banner').remove()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 10px;border-radius:7px;cursor:pointer;font-size:11px;font-family:inherit">✕</button>`;
+  b.innerHTML=`<img src="ppc-icon-192.png" style="width:38px;height:38px;border-radius:9px;flex-shrink:0"><div style="flex:1"><div style="font-size:12.5px;font-weight:700">Ana ekrana əlavə et</div><div style="font-size:10.5px;opacity:.65;margin-top:1px">Paylaş → Ana ekrana əlavə et · Sonra bildirişləri aktivləşdir</div></div><button onclick="this.closest('#install-banner').remove()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:5px 10px;border-radius:7px;cursor:pointer;font-size:11px;font-family:inherit">✕</button>`;
   document.body.appendChild(b);
 }
 
@@ -943,27 +954,41 @@ async function registerFCMToken() {
   try {
     const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
     const messaging = getMessaging();
-    const swReg = await navigator.serviceWorker.ready;
+
+    // PWA/standalone rejimində doğru SW registrasiyasını tap
+    let swReg;
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      swReg = regs.find(r => r.active && r.scope.includes(location.origin)) || await navigator.serviceWorker.ready;
+    } catch(e) {
+      swReg = await navigator.serviceWorker.ready;
+    }
+
     const token = await getToken(messaging, {
       vapidKey: 'BDUwz3e8ZBePatW2Kr6PdXQZUCpCdnO3kP4ivAT3jGwNjiJP245tdBykkRUbQH6_2NfoQs2ZTDw2cCzF7Fs_95I',
       serviceWorkerRegistration: swReg
     });
     if(token && ME && db){
       // Token-i Firebase-ə yaz — Cloud Function oxuyacaq
+      const platform = isIOS() ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'web';
+      const isPWA = isInStandaloneMode();
       await set(ref(db,'fcm_tokens/'+ME.id), {
         token,
         workerId:    ME.id,
         name:        ME.name,
-        platform:    isIOS()?'ios':'android',
+        platform,
+        isPWA,
         updatedAt:   Date.now()
       });
-      console.log('[FCM] Token saved:', ME.id);
+      console.log('[FCM] Token saved. Platform:', platform, 'PWA:', isPWA);
     }
-    // Admin token-nu da saxla (tapşırıq tamamlananda adminə bildiriş üçün)
-    await set(ref(db,'fcm_tokens/admin'), {
-      token,
-      updatedAt: Date.now()
-    }).catch(()=>{});
+    // Admin token-nu da saxla
+    if(token) {
+      await set(ref(db,'fcm_tokens/admin'), {
+        token,
+        updatedAt: Date.now()
+      }).catch(()=>{});
+    }
 
     // Ön planda gələn bildirişlər
     onMessage(messaging, payload => {
@@ -1237,6 +1262,13 @@ function renderTasks(f){
   else if(f==='overdue') tasks=tasks.filter(t=>!t.done&&t.deadline<td);
   else if(f==='kurator') tasks=tasks.filter(t=>t.fromLeader);
 
+  // ── EN TƏZƏ TAPŞIRIQ ƏN BAŞDA ──
+  tasks.sort((a,b)=>{
+    const da=a.date||'', db2=b.date||'';
+    if(da!==db2) return db2.localeCompare(da);
+    return String(b.id).localeCompare(String(a.id));
+  });
+
   document.getElementById('open-badge').textContent=myTasks().filter(t=>!t.done).length;
   if(!tasks.length){
     document.getElementById('task-list').innerHTML='<div style="text-align:center;padding:32px;color:var(--text3);font-size:12px">Tapşırıq tapılmadı</div>';return;
@@ -1246,14 +1278,18 @@ function renderTasks(f){
     const dlCls=t.done?'dl-ok':isOver?'dl-over':t.deadline===td?'dl-warn':'';
     const dlTxt=t.done?'Tamamlandı':isOver?'Gecikdi':t.deadline===td?'Bu gün':'';
     const leader=t.fromLeader?S.workers.find(w=>w.id===t.fromLeader):null;
-    return `<div class="task-row">
-      <div class="tcheck ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+    const giverName = leader ? leader.name.split(' ')[0] : (t.createdBy||'Admin');
+    return `<div class="task-row" onclick="showWorkerTaskDetail('${t.id}')">
+      <div class="tcheck ${t.done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
       <div class="pdot p-${t.priority}"></div>
       <div style="flex:1;min-width:0">
         <div class="task-name ${t.done?'done':''}">${t.name}</div>
         <div style="font-size:10.5px;color:var(--text3);margin-top:2px">
           ${t.cat} · ${t.deadline||'—'}
-          ${leader?`<span style="color:var(--amber);font-weight:600;margin-left:6px">👑 ${leader.name.split(' ')[0]}</span>`:''}
+          ${t.note?'<span style="margin-left:4px;color:var(--blue);font-size:9px">📝</span>':''}
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">
+          Verən: <span style="color:var(--navy);font-weight:600">${leader?'👑 ':''}</span><span style="color:var(--navy);font-weight:600">${giverName}</span>
         </div>
       </div>
       ${dlTxt?`<span class="dl-badge ${dlCls}">${dlTxt}</span>`:''}
@@ -1261,6 +1297,62 @@ function renderTasks(f){
     </div>`;
   }).join('');
 }
+
+// ── İŞÇİ TAPŞIRIQ DETALİ ───────────────────────────────────────────────────
+window.showWorkerTaskDetail = function(id) {
+  const t=S.tasks.find(x=>x.id===id); if(!t) return;
+  const td=today();
+  const leader=t.fromLeader?S.workers.find(w=>w.id===t.fromLeader):null;
+  const giverName = leader ? leader.name : (t.createdBy||'Admin');
+  const isOver = !t.done && t.deadline < td;
+  const pMap={high:'🔴 Yüksək',med:'🟡 Orta',low:'🟢 Aşağı'};
+  const statusHtml = t.done
+    ? '<span style="background:#ECFDF5;color:#065F46;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">✅ Tamamlandı</span>'
+    : isOver
+    ? '<span style="background:#FEF2F2;color:var(--red);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">⚠ Gecikdi</span>'
+    : '<span style="background:#EBF2FF;color:var(--navy);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">🔵 Açıq</span>';
+
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,30,60,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:0';
+  ov.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:relative;animation:slideUp .25s ease">
+    <div style="width:36px;height:4px;background:#DDE4EF;border-radius:2px;margin:0 auto 18px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div style="flex:1;margin-right:10px">
+        <div style="font-size:15px;font-weight:700;color:var(--text)">${t.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">${t.cat} · +${t.pts} xal</div>
+      </div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:#F4F7FC;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Tapşırığı Verən</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy)">${leader?'👑 ':''} ${giverName}</div>
+      </div>
+      <div style="background:#F4F7FC;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Son Tarix</div>
+        <div style="font-size:13px;font-weight:600;color:${isOver?'var(--red)':'var(--text)'}">${t.deadline||'—'}</div>
+      </div>
+      <div style="background:#F4F7FC;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Prioritet</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${pMap[t.priority]||t.priority}</div>
+      </div>
+      <div style="background:#F4F7FC;border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Status</div>
+        ${statusHtml}
+      </div>
+    </div>
+    ${t.note?`<div style="background:#F4F7FC;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">📝 Qeyd / Təlimat</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap">${t.note}</div>
+    </div>`:'<div style="background:#F9FAFB;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--text3);text-align:center">Qeyd yoxdur</div>'}
+    ${!t.done?`<button onclick="this.closest('div[style*=fixed]').remove();toggleTask('${t.id}')"
+      style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+      ✓ Tamamlandı kimi işarələ
+    </button>`:'<div style="text-align:center;padding:10px;font-size:12px;color:var(--green);font-weight:600">✅ Bu tapşırıq artıq tamamlanıb</div>'}
+  </div>`;
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+};
 
 window.toggleTask=function(id){
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
