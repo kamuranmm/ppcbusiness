@@ -441,7 +441,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <div class="tb-title" id="tb-title">Xülasə</div>
         <div class="tb-date" id="tb-date"></div>
       </div>
-      <div id="tb-greeting" style="font-size:12px;color:var(--text3)"></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="tb-greeting" style="font-size:12px;color:var(--text3)"></div>
+        <a id="tg-topbar-btn" href="https://t.me/Ppcbusiness_bot" target="_blank"
+          title="Teleqrama qoşul"
+          style="display:none;align-items:center;gap:5px;background:#229ED9;color:#fff;border-radius:20px;padding:5px 10px;font-size:11px;font-weight:600;text-decoration:none;white-space:nowrap;box-shadow:0 2px 8px rgba(34,158,217,.35)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.94z"/></svg>
+          TG
+        </a>
+      </div>
     </div>
 
     <div class="content">
@@ -665,16 +673,19 @@ function startListener() {
 
   // Telegram qoşulmasını real-time izlə
   onValue(ref(db, 'tg_ids/' + ME.id), snap => {
-    const tgLink = document.getElementById('tg-nav-link');
-    if(!tgLink) return;
-    if(snap.val()?.chatId) {
-      // Qoşuldu — düyməni gizlət, toast göstər
-      if(tgLink.style.display !== 'none') {
+    const tgLink    = document.getElementById('tg-nav-link');
+    const tgTopbar  = document.getElementById('tg-topbar-btn');
+    const connected = snap.val()?.chatId;
+    if(connected) {
+      if(tgLink && tgLink.style.display !== 'none') {
         tgLink.style.display = 'none';
         toast('✅ Telegram uğurla qoşuldu! Artıq bildiriş alacaqsınız.', 'success');
       }
+      if(tgTopbar) tgTopbar.style.display = 'none';
     } else {
-      tgLink.style.display = '';
+      if(tgLink)   tgLink.style.display = '';
+      // Mobil topbar-da TG düyməsini göstər
+      if(tgTopbar) tgTopbar.style.display = 'flex';
     }
   });
 
@@ -1088,11 +1099,12 @@ function enterApp() {
   updateSidebar();
   goPage('overview', document.querySelector('.nav-item'));
   setTimeout(() => { addWorkerTopbarActions(); initWorkerPWA(ME.id); }, 600);
-  // Telegram nav linkini işçi ID ilə yenilə
-  const tgLink = document.getElementById('tg-nav-link');
-  if(tgLink && ME?.id) {
-    tgLink.href = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
-  }
+  // Telegram nav linkini + topbar düyməsini işçi ID ilə yenilə
+  const tgLink   = document.getElementById('tg-nav-link');
+  const tgTopbar = document.getElementById('tg-topbar-btn');
+  const tgUrl    = 'https://t.me/Ppcbusiness_bot?start=worker_' + ME.id;
+  if(tgLink   && ME?.id) tgLink.href   = tgUrl;
+  if(tgTopbar && ME?.id) tgTopbar.href = tgUrl;
   checkTgNavStatus();
 
   // İcraci Direktordursa Təsdiq bölməsini göstər
@@ -1306,49 +1318,77 @@ window.showWorkerTaskDetail = function(id) {
   const giverName = leader ? leader.name : (t.createdBy||'Admin');
   const isOver = !t.done && t.deadline < td;
   const pMap={high:'🔴 Yüksək',med:'🟡 Orta',low:'🟢 Aşağı'};
-  const statusHtml = t.done
-    ? '<span style="background:#ECFDF5;color:#065F46;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">✅ Tamamlandı</span>'
-    : isOver
-    ? '<span style="background:#FEF2F2;color:var(--red);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">⚠ Gecikdi</span>'
-    : '<span style="background:#EBF2FF;color:var(--navy);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">🔵 Açıq</span>';
+  const statusLabel = t.done ? '✅ Tamamlandı' : isOver ? '⚠ Gecikdi' : '🔵 Açıq';
+  const statusBg    = t.done ? '#ECFDF5' : isOver ? '#FEF2F2' : '#EBF2FF';
+  const statusColor = t.done ? '#065F46' : isOver ? 'var(--red)' : 'var(--navy)';
 
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,30,60,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:0';
-  ov.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:relative;animation:slideUp .25s ease">
-    <div style="width:36px;height:4px;background:#DDE4EF;border-radius:2px;margin:0 auto 18px"></div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-      <div style="flex:1;margin-right:10px">
-        <div style="font-size:15px;font-weight:700;color:var(--text)">${t.name}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:3px">${t.cat} · +${t.pts} xal</div>
-      </div>
-      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3)">×</button>
+  ov.innerHTML=`<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;position:relative;animation:slideUp .25s ease">
+
+    <!-- Drag handle -->
+    <div style="padding:12px 0 0;text-align:center">
+      <div style="width:36px;height:4px;background:#DDE4EF;border-radius:2px;display:inline-block"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+
+    <!-- Başlıq -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:14px 20px 10px">
+      <div style="flex:1;margin-right:10px">
+        <div style="font-size:16px;font-weight:700;color:var(--text);line-height:1.3">${t.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:8px">
+          <span>${t.cat}</span>
+          <span style="background:#F0F4FF;color:var(--navy);padding:1px 7px;border-radius:10px;font-weight:600">+${t.pts} xal</span>
+          <span style="background:${statusBg};color:${statusColor};padding:1px 7px;border-radius:10px;font-weight:600">${statusLabel}</span>
+        </div>
+      </div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);padding:0 2px;line-height:1">×</button>
+    </div>
+
+    <!-- Qeyd — ən əvvəl, böyük və aydın göstər -->
+    <div style="padding:0 20px 14px">
+      ${t.note
+        ? `<div style="background:linear-gradient(135deg,#EBF2FF,#F4F7FC);border:1.5px solid #C7D9F5;border-radius:12px;padding:14px 16px">
+             <div style="font-size:10px;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;opacity:.7">📝 Tapşırıq Qeydi / Təlimat</div>
+             <div style="font-size:14px;color:var(--text);line-height:1.65;white-space:pre-wrap;font-weight:500">${t.note}</div>
+           </div>`
+        : `<div style="background:#F9FAFB;border-radius:12px;padding:12px 16px;font-size:12px;color:var(--text3);text-align:center;border:1px dashed #DDE4EF">
+             Qeyd yazılmayıb
+           </div>`
+      }
+    </div>
+
+    <!-- Məlumat kartları -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px 16px">
       <div style="background:#F4F7FC;border-radius:10px;padding:10px">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Tapşırığı Verən</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Tapşırığı Verən</div>
         <div style="font-size:13px;font-weight:600;color:var(--navy)">${leader?'👑 ':''} ${giverName}</div>
       </div>
       <div style="background:#F4F7FC;border-radius:10px;padding:10px">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Son Tarix</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Son Tarix</div>
         <div style="font-size:13px;font-weight:600;color:${isOver?'var(--red)':'var(--text)'}">${t.deadline||'—'}</div>
       </div>
       <div style="background:#F4F7FC;border-radius:10px;padding:10px">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Prioritet</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Prioritet</div>
         <div style="font-size:13px;font-weight:600;color:var(--text)">${pMap[t.priority]||t.priority}</div>
       </div>
       <div style="background:#F4F7FC;border-radius:10px;padding:10px">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Status</div>
-        ${statusHtml}
+        <div style="font-size:9.5px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">Kateqoriya</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${t.cat}</div>
       </div>
     </div>
-    ${t.note?`<div style="background:#F4F7FC;border-radius:10px;padding:14px;margin-bottom:16px">
-      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">📝 Qeyd / Təlimat</div>
-      <div style="font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap">${t.note}</div>
-    </div>`:'<div style="background:#F9FAFB;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--text3);text-align:center">Qeyd yoxdur</div>'}
-    ${!t.done?`<button onclick="this.closest('div[style*=fixed]').remove();toggleTask('${t.id}')"
-      style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
-      ✓ Tamamlandı kimi işarələ
-    </button>`:'<div style="text-align:center;padding:10px;font-size:12px;color:var(--green);font-weight:600">✅ Bu tapşırıq artıq tamamlanıb</div>'}
+
+    <!-- Tamamla düyməsi -->
+    <div style="padding:0 20px 28px">
+      ${!t.done
+        ? `<button onclick="this.closest('div[style*=fixed]').remove();toggleTask('${t.id}')"
+            style="width:100%;padding:14px;border-radius:13px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(46,139,87,.35)">
+            ✓ Tamamlandı kimi işarələ
+          </button>`
+        : `<div style="text-align:center;padding:12px;font-size:13px;color:var(--green);font-weight:600;background:#ECFDF5;border-radius:12px">
+             ✅ Bu tapşırıq artıq tamamlanıb
+           </div>`
+      }
+    </div>
   </div>`;
   ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
