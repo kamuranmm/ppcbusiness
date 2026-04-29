@@ -963,24 +963,39 @@ async function requestNotifPermission() {
 
 async function registerFCMToken() {
   try {
+    console.log('[FCM] Başlayır... Notification.permission:', Notification.permission);
     const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
+    console.log('[FCM] messaging modulu yükləndi');
     const messaging = getMessaging();
 
-    // PWA/standalone rejimində doğru SW registrasiyasını tap
+    // SW registrasiyasını tap — timeout ilə
     let swReg;
     try {
+      console.log('[FCM] SW axtarılır...');
       const regs = await navigator.serviceWorker.getRegistrations();
-      swReg = regs.find(r => r.active && r.scope.includes(location.origin)) || await navigator.serviceWorker.ready;
+      console.log('[FCM] SW sayı:', regs.length, regs.map(r=>r.scope));
+      swReg = regs.find(r => r.active && r.scope.includes(location.origin));
+      if(!swReg) {
+        console.log('[FCM] Aktiv SW tapılmadı, ready gözlənilir...');
+        swReg = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('SW timeout')),8000))
+        ]);
+      }
+      console.log('[FCM] SW tapıldı:', swReg.scope);
     } catch(e) {
-      swReg = await navigator.serviceWorker.ready;
+      console.log('[FCM] SW xətası:', e.message);
+      swReg = await navigator.serviceWorker.ready.catch(()=>null);
     }
 
+    console.log('[FCM] getToken çağırılır...');
     const token = await getToken(messaging, {
       vapidKey: 'BDUwz3e8ZBePatW2Kr6PdXQZUCpCdnO3kP4ivAT3jGwNjiJP245tdBykkRUbQH6_2NfoQs2ZTDw2cCzF7Fs_95I',
       serviceWorkerRegistration: swReg
     });
+    console.log('[FCM] Token alındı:', token ? token.substring(0,20)+'...' : 'BOŞ!');
+
     if(token && ME && db){
-      // Token-i Firebase-ə yaz — Cloud Function oxuyacaq
       const platform = isIOS() ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'web';
       const isPWA = isInStandaloneMode();
       await set(ref(db,'fcm_tokens/'+ME.id), {
@@ -991,9 +1006,11 @@ async function registerFCMToken() {
         isPWA,
         updatedAt:   Date.now()
       });
-      console.log('[FCM] Token saved. Platform:', platform, 'PWA:', isPWA);
+      console.log('[FCM] Token Firebase-ə yazıldı! Platform:', platform, 'PWA:', isPWA);
+    } else {
+      console.log('[FCM] Token yazılmadı — token:', !!token, 'ME:', !!ME, 'db:', !!db);
     }
-    // Admin token-nu da saxla
+
     if(token) {
       await set(ref(db,'fcm_tokens/admin'), {
         token,
@@ -1001,13 +1018,13 @@ async function registerFCMToken() {
       }).catch(()=>{});
     }
 
-    // Ön planda gələn bildirişlər
     onMessage(messaging, payload => {
       const {title, body} = payload.notification||{};
       if(title||body) toast((title||'PPC')+': '+(body||''), 'success');
     });
   } catch(e){
-    console.log('[FCM] Error:', e.message);
+    console.log('[FCM] XƏTA:', e.message, e.code||'', e.stack?.split('
+')[1]||'');
   }
 }
 
