@@ -278,8 +278,22 @@ tbody tr:hover td{background:var(--surface2)}
   .tab-btn{white-space:nowrap;flex-shrink:0}
 }
 </style>
-<!-- PushAlert -->
-<script type="text/javascript">
+<!-- PushAlert Admin -->
+<script>
+window.pushalertbyiw = window.pushalertbyiw || [];
+window.pushalertbyiw.push(["onReady", function(pa) {
+  pa.getSubscriberId(function(subId) {
+    window._pa_admin_subid = subId;
+    console.log('[PA] Admin subscriber ID:', subId);
+    if(subId && window.db && window.ref && window.set) {
+      try {
+        set(ref(db,'ppcdata/push_tokens/admin'), {
+          subId, name:'Admin', updatedAt: Date.now()
+        });
+      } catch(e) {}
+    }
+  });
+}]);
 (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
 g.src="https://cdn.pushalert.co/unified_11b93318246247efafd3ec98cfc82889.js";
 s.parentNode.insertBefore(g,s);}(document,"script"));
@@ -1296,25 +1310,27 @@ const toArr = v => {
 };
 
 // ── TAPŞIRIQ ƏLAVƏ ET (Firebase-ə birbaşa) ───────────────────────────────────
-// ── PUSHALERT İLƏ FƏRDI PUSH ─────────────────────────────────────────────────
-async function sendPushAlert(workerId, title, body, url) {
+// ── PushAlert Fərdi Push ──────────────────────────────────────────────────────
+async function sendPushAlert(workerId, title, body) {
   try {
     const snap = await get(ref(db, 'ppcdata/push_tokens/' + workerId));
     const subId = snap.val()?.subId;
-    if(!subId) { console.log('[PA] Subscriber ID yoxdur:', workerId); return; }
+    if(!subId) { console.log('[PA] SubId yoxdur worker üçün:', workerId); return false; }
+    console.log('[PA] Göndərilir... subId:', subId.substring(0,15)+'...');
     const resp = await fetch('https://api.pushalert.co/rest/v1/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-id': '441646306920b3b82d290fcce9c527f8' },
+      headers: {'Content-Type':'application/json','api-id':'441646306920b3b82d290fcce9c527f8'},
       body: JSON.stringify({
-        title, message: body,
-        url: url || 'https://adminpanel.mycontact.az/ppc-isci-portal.html',
-        include_subscriber_ids: [subId]
+        title,
+        message: body,
+        url: 'https://adminpanel.mycontact.az/ppc-isci-portal.html',
+        subscriber_id: subId
       })
     });
     const r = await resp.json();
-    if(r.success) console.log('[PA] Push göndərildi ✓', workerId);
-    else console.log('[PA] Push xətası:', JSON.stringify(r));
-  } catch(e) { console.log('[PA] Xəta:', e.message); }
+    console.log('[PA] Cavab:', JSON.stringify(r));
+    return r.success;
+  } catch(e) { console.log('[PA] Xəta:', e.message); return false; }
 }
 
 function fbAddTask(task) {
@@ -1324,33 +1340,21 @@ function fbAddTask(task) {
     .then(async () => {
       console.log('[Firebase] Task yazıldı ✓', task.id);
       // ── PushAlert push ──
-      try {
-        const priority = task.priority==='high'?'🔴':task.priority==='med'?'🟡':'🟢';
-        await sendPushAlert(
-          task.wid,
-          '📋 Yeni Tapşırıq',
-          priority + ' ' + task.name + ' · +' + (task.pts||0) + ' xal' + (task.deadline?' · '+task.deadline:''),
-          'https://adminpanel.mycontact.az/ppc-isci-portal.html'
-        );
-      } catch(e) { console.log('[PA] Push xətası:', e.message); }
+      const priority = task.priority==='high'?'🔴':task.priority==='med'?'🟡':'🟢';
+      await sendPushAlert(
+        task.wid,
+        '📋 Yeni Tapşırıq',
+        priority+' '+task.name+' · +'+( task.pts||0)+' xal'+(task.deadline?' · '+task.deadline:'')
+      );
       // ── Telegram push ──
       try {
         const w = S.workers.find(x=>x.id===task.wid);
-        const assignerName = document.getElementById('sf-name')?.textContent || 'Admin';
-        const priority = task.priority==='high'?'🔴 Yüksək':task.priority==='med'?'🟡 Orta':'🟢 Aşağı';
-        const msg = '📋 <b>Yeni Tapşırıq</b>\n\n' +
-          '👤 İşçi: <b>' + (w?.name||'?') + '</b>\n' +
-          '📝 ' + task.name + '\n' +
-          '⚡ ' + priority + ' · ⭐ +' + task.pts + ' xal\n' +
-          '📅 Son tarix: ' + (task.deadline||'—') + '\n' +
-          (task.note ? '📌 Qeyd: ' + task.note + '\n' : '') +
-          '✍️ Verən: ' + assignerName;
-        const keyboard = { inline_keyboard: [[
-          {text: '✅ Tamamlandı', callback_data: 'done:'+task.id+':'+task.wid},
-          {text: '❌ Tamamlanmadı', callback_data: 'notdone:'+task.id+':'+task.wid}
-        ]]};
-        const workerTgId = await getWorkerTgId(task.wid);
-        if(workerTgId) await sendTelegram(msg, workerTgId, keyboard);
+        const assignerName = document.getElementById('sf-name')?.textContent||'Admin';
+        const pLabel = task.priority==='high'?'🔴 Yüksək':task.priority==='med'?'🟡 Orta':'🟢 Aşağı';
+        const msg = '📋 <b>Yeni Tapşırıq</b>\n\n👤 İşçi: <b>'+(w?.name||'?')+'</b>\n📝 '+task.name+'\n⚡ '+pLabel+' · ⭐ +'+task.pts+' xal\n📅 Son tarix: '+(task.deadline||'—')+'\n'+(task.note?'📌 Qeyd: '+task.note+'\n':'')+'✍️ Verən: '+assignerName;
+        const kb = {inline_keyboard:[[{text:'✅ Tamamlandı',callback_data:'done:'+task.id+':'+task.wid},{text:'❌ Tamamlanmadı',callback_data:'notdone:'+task.id+':'+task.wid}]]};
+        const tgId = await getWorkerTgId(task.wid);
+        if(tgId) await sendTelegram(msg, tgId, kb);
         await sendTelegram(msg, TG_CHAT);
       } catch(e) { console.log('[TG] Xəta:', e.message); }
     })
@@ -1398,18 +1402,6 @@ function loadState() {
   if(!db){ seedData(); refreshAll(); return; }
 
   listenTeklifler();
-  // Admin PushAlert subscriber ID → Firebase
-  window.pushalertbyiw = window.pushalertbyiw || [];
-  window.pushalertbyiw.push(["onReady", function(pa) {
-    pa.getSubscriberId(async function(subId) {
-      if(subId && db) {
-        set(ref(db,'ppcdata/push_tokens/admin'), {
-          subId, name:'Admin', updatedAt: Date.now()
-        }).catch(()=>{});
-        console.log('[PA] Admin subscriber ID yazıldı:', subId);
-      }
-    });
-  }]);
   // Tapşırıqları dinlə (tasks/ kokunden — ayrica)
   onValue(ref(db, 'ppcdata/tasks'), snap => {
     const val = snap.val();
