@@ -266,7 +266,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <meta name="apple-mobile-web-app-title" content="PPC Sistem">
 <link rel="apple-touch-icon" href="ppc-icon-192.png">
 <!-- PushAlert -->
-<script type="text/javascript">
+<script>
+// PushAlert subscriber ID → Firebase yazma (skript yüklənəndə işləyir)
+window._pa_save_pending = true;
+window.pushalertbyiw = window.pushalertbyiw || [];
+window.pushalertbyiw.push(["onReady", function(pa) {
+  pa.getSubscriberId(function(subId) {
+    window._pa_subscriber_id = subId;
+    console.log('[PA] Subscriber ID alındı:', subId);
+    // Əgər ME artıq mövcuddursa dərhal yaz
+    if(subId && window._pa_me_ready) {
+      window._pa_save_to_firebase(subId);
+    }
+  });
+}]);
 (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
 g.src="https://cdn.pushalert.co/unified_11b93318246247efafd3ec98cfc82889.js";
 s.parentNode.insertBefore(g,s);}(document,"script"));
@@ -972,28 +985,21 @@ async function initWorkerPWA(workerId) {
     }
   }
 
-  // ── PushAlert Subscriber ID → Firebase ──
-  window.pushalertbyiw = window.pushalertbyiw || [];
-  window.pushalertbyiw.push(["onReady", function(pa) {
-    pa.getSubscriberId(async function(subId) {
-      if(subId && ME && db) {
-        try {
-          await set(ref(db,'ppcdata/push_tokens/'+ME.id), {
-            subId, name: ME.name, updatedAt: Date.now()
-          });
-          console.log('[PushAlert] Subscriber ID yazıldı:', subId);
-        } catch(e) { console.log('[PushAlert] Yazma xətası:', e.message); }
-      }
-    });
-    // Admin üçün də saxla
-    pa.getSubscriberId(async function(subId) {
-      if(subId && db) {
-        set(ref(db,'ppcdata/push_tokens/admin_'+( ME?.id||'admin')), {
-          subId, name: ME?.name||'admin', updatedAt: Date.now()
-        }).catch(()=>{});
-      }
-    });
-  }]);
+  // ── PushAlert subscriber ID saxla ──
+  window._pa_me_ready = true;
+  window._pa_save_to_firebase = async function(subId) {
+    if(!subId || !ME || !db) return;
+    try {
+      await set(ref(db,'ppcdata/push_tokens/'+ME.id), {
+        subId, name: ME.name, wid: ME.id, updatedAt: Date.now()
+      });
+      console.log('[PA] Firebase-ə yazıldı ✓', ME.id, subId);
+    } catch(e) { console.log('[PA] Yazma xətası:', e.message); }
+  };
+  // Əgər subscriber ID artıq alınıbsa — indi yaz
+  if(window._pa_subscriber_id) {
+    window._pa_save_to_firebase(window._pa_subscriber_id);
+  }
 
   // Real-time bildiriş listener
   listenNotifications(workerId);
