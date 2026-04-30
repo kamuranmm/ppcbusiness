@@ -1037,7 +1037,7 @@ async function registerFCMToken() {
     console.log('[FCM] Başlayır... Notification.permission:', Notification.permission);
     const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
     console.log('[FCM] messaging modulu yükləndi');
-    const messaging = getMessaging();
+    const messaging = getMessaging(app); // app-i explicit ötür
 
     // SW registrasiyasını tap — timeout ilə
     let swReg;
@@ -1093,7 +1093,10 @@ async function registerFCMToken() {
       if(title||body) toast((title||'PPC')+': '+(body||''), 'success');
     });
   } catch(e){
-    console.log('[FCM] XƏTA:', e.message, e.code||'');
+    console.log('[FCM] XƏTA:', e.code||'', e.message);
+    // Xətanı ekranda göstər
+    const errDiv = document.getElementById('fcm-test-result');
+    if(errDiv) errDiv.innerHTML = '<span style="color:red">Xəta: ' + (e.code||'') + ' ' + e.message + '</span>';
   }
 }
 
@@ -1540,9 +1543,12 @@ window.testBildiris = async function() {
       </div>
 
       ${perm === 'granted'
-        ? `<button onclick="this.textContent='Yoxlanılır...';registerFCMToken().then(()=>this.textContent='Yenidən cəhd edildi, yoxla')" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--navy);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">
-            🔄 Token-i Yenilə
-          </button>`
+        ? `<div>
+            <button onclick="(async()=>{this.textContent='Yoxlanılır...';this.disabled=true;try{await registerFCMToken();const s1=await get(ref(db,'ppcdata/fcm_tokens/${ME?.id||''}'));const s2=await get(ref(db,'fcm_tokens/${ME?.id||''}'));if(s1.val()?.token||s2.val()?.token){document.getElementById('fcm-test-result').innerHTML='<span style=color:green;font-weight:700>Token yazıldı! ✅ Bildirişlər işləyir</span>';}else{document.getElementById('fcm-test-result').innerHTML='<span style=color:red>Token hələ yazılmadı - konsola bax</span>';}}catch(err){document.getElementById('fcm-test-result').innerHTML='<span style=color:red>Xəta: '+err.message+'</span>';}finally{this.textContent='🔄 Token-i Yenilə';this.disabled=false;}})()" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--navy);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">
+              🔄 Token-i Yenilə
+            </button>
+            <div id="fcm-test-result" style="text-align:center;font-size:12px;padding:8px;min-height:20px"></div>
+          </div>`
         : perm === 'denied'
         ? `<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px 0">Yuxarıdakı təlimatı izlə, sonra səhifəni yenilə</div>`
         : `<button onclick="Notification.requestPermission().then(p=>{if(p==='granted'){registerFCMToken();this.closest('div[style*=fixed]').remove();toast('İcazə verildi! Token alınır...','success');}else{this.textContent='İcazə verilmədi :(';}})" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
