@@ -953,12 +953,22 @@ window.doRegister = async function() {
 
 // ── İŞÇİ PWA + BİLDİRİŞ ──────────────────────────────────────────────────────
 async function initWorkerPWA(workerId) {
-  // Service Worker - explicit scope
+  // Service Worker — qeydiyyat + aktivləşməni gözlə
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('./firebase-messaging-sw.js', {scope: './'});
+      const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js', {scope: './'});
+      console.log('[SW] Qeydiyyat OK:', reg.scope);
+      // Aktiv olana qədər gözlə
+      await new Promise(resolve => {
+        if (reg.active) { resolve(); return; }
+        const w = reg.installing || reg.waiting;
+        if (w) { w.addEventListener('statechange', e => { if(e.target.state==='activated') resolve(); }); }
+        else { navigator.serviceWorker.ready.then(resolve); }
+        setTimeout(resolve, 3000); // max 3s gözlə
+      });
+      console.log('[SW] Aktiv ✓');
     } catch(e) {
-      console.log('[SW] Register error:', e);
+      console.log('[SW] Register error:', e.message);
     }
   }
 
@@ -1032,7 +1042,7 @@ async function requestNotifPermission() {
   if(p==='granted'){ await registerFCMToken(); toast('Bildirişlər aktiv edildi 🔔','success'); }
 }
 
-async function registerFCMToken() {
+window.registerFCMToken = async function registerFCMToken() {
   try {
     console.log('[FCM] Başlayır... Notification.permission:', Notification.permission);
     const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js');
