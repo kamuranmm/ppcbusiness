@@ -481,6 +481,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
         <div style="height:1px;background:var(--border);margin:8px 14px"></div>
 
+        <!-- Bildiriş Test -->
+        <button onclick="closeDrawer();testBildiris()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border:none;background:none;border-radius:12px;cursor:pointer;font-family:inherit;text-align:left;transition:.15s" onmouseover="this.style.background='#F4F7FC'" onmouseout="this.style.background='none'">
+          <div style="width:36px;height:36px;border-radius:10px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔔</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Bildiriş Test</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px">Push bildirişini yoxla</div>
+          </div>
+        </button>
+
+        <div style="height:1px;background:var(--border);margin:8px 14px"></div>
+
         <!-- Cixis -->
         <button onclick="closeDrawer();doLogout()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border:none;background:none;border-radius:12px;cursor:pointer;font-family:inherit;text-align:left;transition:.15s" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background='none'">
           <div style="width:36px;height:36px;border-radius:10px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">←</div>
@@ -1058,24 +1069,23 @@ async function registerFCMToken() {
     if(token && ME && db){
       const platform = isIOS() ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'web';
       const isPWA = isInStandaloneMode();
-      await set(ref(db,'fcm_tokens/'+ME.id), {
-        token,
-        workerId:    ME.id,
-        name:        ME.name,
-        platform,
-        isPWA,
-        updatedAt:   Date.now()
-      });
-      console.log('[FCM] Token Firebase-ə yazıldı! Platform:', platform, 'PWA:', isPWA);
+      // ppcdata/ altına yaz — database rules icazə verir
+      const tokenData = { token, workerId: ME.id, name: ME.name, platform, isPWA, updatedAt: Date.now() };
+      try {
+        await set(ref(db,'ppcdata/fcm_tokens/'+ME.id), tokenData);
+        console.log('[FCM] Token ppcdata/fcm_tokens-a yazıldı! Platform:', platform, 'PWA:', isPWA);
+      } catch(writeErr) {
+        console.log('[FCM] ppcdata yazma xətası:', writeErr.code, writeErr.message);
+        // Backup — tg_ids altına əlavə et (artıq mövcuddur)
+        try {
+          await update(ref(db,'tg_ids/'+ME.id), { fcmToken: token, fcmUpdatedAt: Date.now() });
+          console.log('[FCM] Token tg_ids-ə yazıldı (backup)');
+        } catch(e2) {
+          console.log('[FCM] Backup yazma da uğursuz:', e2.message);
+        }
+      }
     } else {
       console.log('[FCM] Token yazılmadı — token:', !!token, 'ME:', !!ME, 'db:', !!db);
-    }
-
-    if(token) {
-      await set(ref(db,'fcm_tokens/admin'), {
-        token,
-        updatedAt: Date.now()
-      }).catch(()=>{});
     }
 
     onMessage(messaging, payload => {
@@ -1454,6 +1464,97 @@ window.showWorkerTaskDetail = function(id) {
 };
 
 // ── YAN MENU (DRAWER) ────────────────────────────────────────────────────────
+// ── BİLDİRİŞ TEST ───────────────────────────────────────────────────────────
+window.testBildiris = async function() {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,60,.55);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+
+  const perm = ('Notification' in window) ? Notification.permission : 'yoxdur';
+  const swSupport = 'serviceWorker' in navigator;
+
+  let swInfo = 'Yoxlanılır...';
+  let regs = [];
+  try {
+    regs = await navigator.serviceWorker.getRegistrations();
+    swInfo = regs.length > 0 ? regs.map(r=>r.scope).join(', ') : 'Qeydiyyat yoxdur';
+  } catch(e) { swInfo = 'Xəta: ' + e.message; }
+
+  const permColor = perm==='granted'?'#065F46':perm==='denied'?'#991B1B':'#92400E';
+  const permBg = perm==='granted'?'#ECFDF5':perm==='denied'?'#FEF2F2':'#FEF3C7';
+  const permText = perm==='granted'?'✅ Verilmişdir':perm==='denied'?'❌ BLOKLANIIB':' Sorulmayıb';
+
+  // Token yoxla
+  let tokenInfo = '';
+  let tokenStatus = '';
+  try {
+    const snap1 = await get(ref(db,'ppcdata/fcm_tokens/'+(ME?.id||'')));
+    const snap2 = await get(ref(db,'fcm_tokens/'+(ME?.id||'')));
+    const d1 = snap1.val();
+    const d2 = snap2.val();
+    if(d1?.token) tokenInfo = 'ppcdata/fcm_tokens-da var ✅';
+    else if(d2?.token) tokenInfo = 'fcm_tokens-da var ✅';
+    else tokenInfo = '❌ Firebase-də token YOXDUR';
+    tokenStatus = (d1||d2) ? 'green' : 'red';
+  } catch(e) { tokenInfo = 'Oxuma xətası: ' + e.message; }
+
+  const instructions = perm === 'denied' ? `
+    <div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:#991B1B;margin-bottom:8px">❌ Bildiriş bloklanıb — necə açmaq olar:</div>
+      <div style="font-size:12px;color:#7F1D1D;line-height:1.7">
+        1. Chrome-da yuxarı sağda <b>⋮</b> → <b>Settings</b><br>
+        2. <b>Site Settings</b> → <b>Notifications</b><br>
+        3. <b>Blocked</b> siyahısında <b>adminpanel.mycontact.az</b> tap<br>
+        4. Üzərinə bas → <b>Allow</b> seç<br>
+        5. Geri qayıt, səhifəni <b>yenilə (F5)</b><br>
+        6. Bu testi yenidən aç → <b>"İcazə Al"</b> bas
+      </div>
+    </div>` : '';
+
+  ov.innerHTML = `<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease">
+    <div style="padding:12px 0 4px;text-align:center"><div style="width:36px;height:4px;background:#DDE4EF;border-radius:2px;display:inline-block"></div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 14px">
+      <div style="font-size:16px;font-weight:700;color:var(--text)">🔔 Bildiriş Diaqnostika</div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text3)">x</button>
+    </div>
+    <div style="padding:0 16px 24px">
+
+      ${instructions}
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <div style="background:#F4F7FC;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text2);font-weight:600">Bildiriş İcazəsi</span>
+          <span style="background:${permBg};color:${permColor};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">${permText}</span>
+        </div>
+        <div style="background:#F4F7FC;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text2);font-weight:600">Service Worker</span>
+          <span style="background:${regs.length>0?'#ECFDF5':'#FEF2F2'};color:${regs.length>0?'#065F46':'#991B1B'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">${regs.length>0?'✅ Aktiv':'❌ Yoxdur'}</span>
+        </div>
+        <div style="background:#F4F7FC;border-radius:10px;padding:12px">
+          <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:4px">FCM Token (Firebase)</div>
+          <div style="font-size:11px;color:${tokenStatus==='green'?'#065F46':'#991B1B'};font-weight:600">${tokenInfo}</div>
+        </div>
+        <div style="background:#F4F7FC;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text2);font-weight:600">Hesab</span>
+          <span style="font-size:11px;color:var(--navy);font-weight:600">${ME?.name||'?'} (${ME?.id||'?'})</span>
+        </div>
+      </div>
+
+      ${perm === 'granted'
+        ? `<button onclick="this.textContent='Yoxlanılır...';registerFCMToken().then(()=>this.textContent='Yenidən cəhd edildi, yoxla')" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--navy);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">
+            🔄 Token-i Yenilə
+          </button>`
+        : perm === 'denied'
+        ? `<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px 0">Yuxarıdakı təlimatı izlə, sonra səhifəni yenilə</div>`
+        : `<button onclick="Notification.requestPermission().then(p=>{if(p==='granted'){registerFCMToken();this.closest('div[style*=fixed]').remove();toast('İcazə verildi! Token alınır...','success');}else{this.textContent='İcazə verilmədi :(';}})" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+            🔔 İcazə Al
+          </button>`
+      }
+    </div>
+  </div>`;
+  ov.addEventListener('click', e=>{if(e.target===ov) ov.remove();});
+  document.body.appendChild(ov);
+};
+
 window.openDrawer = function() {
   document.getElementById('side-drawer').style.transform='translateX(0)';
   document.getElementById('drawer-overlay').style.display='block';
