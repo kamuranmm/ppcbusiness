@@ -315,7 +315,7 @@ s.parentNode.insertBefore(g,s);}(document,"script"));
       <div id="al-err" style="display:none;background:rgba(217,79,61,.15);border:1px solid rgba(217,79,61,.4);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#F87171;margin-bottom:14px"></div>
       <div style="margin-bottom:13px">
         <div style="font-size:11.5px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:5px">Email</div>
-        <input id="al-email" type="email" placeholder="admin@ppc.az" onkeydown="if(event.key==='Enter')document.getElementById('al-pass').focus()"
+        <input id="al-email" type="email" placeholder="kamran@gmail.com" onkeydown="if(event.key==='Enter')document.getElementById('al-pass').focus()"
           style="width:100%;padding:11px 14px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13px;font-family:inherit;outline:none">
       </div>
       <div style="margin-bottom:18px">
@@ -904,7 +904,7 @@ s.parentNode.insertBefore(g,s);}(document,"script"));
         </select>
       </div>
     </div>
-    <div class="fg"><label class="fl">Email</label><input class="fi" id="w-email" type="email" placeholder="leyla@ppc.az"></div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="w-email" type="email" placeholder="leyla@gmail.com"></div>
     
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-worker')">Ləğv et</button>
@@ -3041,9 +3041,7 @@ async function renderMuraciatler() {
             <div style="display:flex;align-items:center;gap:8px;margin-top:1px">
               <span style="font-size:11px;color:var(--text3)">@${m.username}</span>
               <span style="font-size:11px;color:var(--text3)">·</span>
-              <span id="pc_pass_${m.id}" style="font-size:11px;font-family:monospace;color:var(--text3);letter-spacing:.08em">••••••</span>
-              <button onclick="togglePassView('pc_pass_${m.id}','${m.pass}')"
-                style="background:none;border:1px solid rgba(0,0,0,.1);border-radius:4px;padding:1px 6px;font-size:10px;cursor:pointer;color:var(--text3)">👁</button>
+              <span style="font-size:11px;color:var(--green);font-weight:600">🔒 Firebase Auth</span>
             </div>
             <div style="font-size:10px;color:var(--text3);margin-top:3px">${m.tel||'—'} · Müraciət tarixi: ${m.date}</div>
           </div>
@@ -3091,13 +3089,10 @@ async function renderMuraciatler() {
       <td>${m.filial}</td>
       <td style="font-family:monospace;font-size:12px">@${m.username}</td>
       <td>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span id="pass_${m.id}" style="font-family:monospace;font-size:12px;letter-spacing:.1em">••••••</span>
-          <button onclick="togglePassView('${m.id}','${m.pass}')"
-            style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--text3)">
-            👁
-          </button>
-        </div>
+        <span style="font-size:11px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          Firebase Auth
+        </span>
       </td>
       <td>${m.date}</td>
       <td><span class="badge ${m.status==='approved'?'b-green':m.status==='rejected'?'b-red':'b-amber'}">
@@ -3125,46 +3120,42 @@ window.approveWorker = async function(id) {
 
     // İşçini workers siyahısına əlavə et
     const COLORS=['#1E5FAD','#0A7C6E','#7B4FB8','#E8931A','#D94F3D','#06B6D4','#2E8B57'];
+    // Worker ID: Firebase Auth UID istifadə et (mövcuddursa), yoxdursa köhnə format
+    const workerId = m.uid || m.workerId || ('w_mur_'+(m.id||'').replace('mur_',''));
     const newWorker = {
-      id: m.workerId || ('w_mur_'+(m.id||'').replace('mur_','')),
-      name: m.ad+' '+m.soyad,
-      role: m.vezife,
-      dept: m.vezife,
-      branch: m.filial,
-      color: COLORS[Math.floor(Math.random()*COLORS.length)],
-      username: m.username,
-      email: m.username+'@ppc.az',
-      tel: m.tel||'',
-      isNew: true,
-      is_icraci: m.vezife === 'İcraçı Direktor',
+      id:         workerId,
+      name:       m.fullName || (m.ad+' '+m.soyad),
+      role:       m.vezife,
+      dept:       m.vezife,
+      branch:     m.filial,
+      color:      COLORS[Math.floor(Math.random()*COLORS.length)],
+      username:   m.username || (m.email||'').split('@')[0],
+      email:      m.email || '',
+      tel:        m.tel||'',
+      isNew:      true,
+      is_icraci:  m.vezife === 'İcraçı Direktor',
     };
 
     // ppcdata/workers-ə əlavə et
     const wSnap = await get(ref(db,'ppcdata/workers'));
     const workers = wSnap.val() || [];
     const arr = Array.isArray(workers) ? workers : Object.values(workers);
-    // Artıq varsa əlavə etmə
-    if(!arr.find(w=>w.username===m.username)) arr.push(newWorker);
+    // Artıq varsa əlavə etmə (username və ya id ilə yoxla)
+    if(!arr.find(w=>w.username===m.username || w.id===workerId)) arr.push(newWorker);
     await set(ref(db,'ppcdata/workers'), arr);
 
     // Müraciəti təsdiqlənmiş kimi işarələ + workerId saxla
-    await update(ref(db,'isci_muraciatleri/'+id), {status:'approved', workerId:newWorker.id, approvedAt:Date.now()});
+    // ⚠️ Şifrə saxlanmır — Firebase Auth özü idarə edir
+    await update(ref(db,'isci_muraciatleri/'+id), {
+      status:     'approved',
+      workerId:   workerId,
+      approvedAt: Date.now()
+    });
 
-    // Firebase Auth-da hesab yarat (işçi giriş edə bilsin)
-    try {
-      const { getAuth, createUserWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
-      const adminAuth = getAuth();
-      const email = m.username + '@ppc.az';
-      await createUserWithEmailAndPassword(adminAuth, email, m.pass);
-      console.log('[Auth] Hesab yaradıldı:', email);
-    } catch(authErr) {
-      // Hesab artıq varsa xəta vermir
-      if (authErr.code !== 'auth/email-already-in-use') {
-        console.log('[Auth] Hesab yaratma xətası:', authErr.message);
-      }
-    }
+    // ✅ Firebase Auth hesabı artıq mövcuddur — işçi qeydiyyat zamanı açmışdır
+    // Admin tərəfindən əlavə hesab yaratmağa ehtiyac yoxdur
 
-    toast(m.ad+' '+m.soyad+' təsdiqləndi ✓ İndi sistemə daxil ola bilər','success');
+    toast(newWorker.name+' təsdiqləndi ✓ İndi sistemə daxil ola bilər','success');
     renderMuraciatler();
   } catch(e) { toast('Xəta: '+e.message,'error'); }
 };
@@ -3253,16 +3244,6 @@ window.rejectWorker = async function(id) {
     restoreSidebarOrder();
   }, 200);
 })();
-
-// ── ŞİFRƏ GÖSTƏRMƏ ──────────────────────────────────────────────────────────
-const _passVisible = {};
-window.togglePassView = function(elId, pass) {
-  const el = document.getElementById(elId);
-  if(!el) return;
-  _passVisible[elId] = !_passVisible[elId];
-  el.textContent = _passVisible[elId] ? pass : '••••••';
-  el.style.color = _passVisible[elId] ? 'var(--text)' : 'var(--text3)';
-};
 
 // ── İŞÇİ BİLDİRİŞİ — GitHub Actions + Firebase ─────────────────────────────
 const GITHUB_OWNER = 'kamuranmm';
@@ -3664,22 +3645,18 @@ window.toast = function(msg, type='') {
 
 
 // ── ADMIN GİRİŞ SİSTEMİ ─────────────────────────────────────────────────────
-const ADMIN_USERS = [
-  {email:'kamran@ppc.az', pass:'Kamran@PPC2024!', name:'Kamran', role:'Sistem Admini · PPC'},
-];
+// ✅ Yalnız Firebase Authentication istifadə olunur — hardcoded şifrə yoxdur
+// Admin hesabı Firebase Console-dan idarə edin:
+//   https://console.firebase.google.com → Authentication → Users
 
 function showLogin() {
   document.getElementById('admin-login').style.display='flex';
   document.getElementById('app-wrap').style.display='none';
 }
 function showApp(user) {
-  // Session saxla — 3 yerdə
+  // Session saxla — 2 yerdə (cookie olmadan daha təhlükəsiz)
   const sessData = {email:user.email||user.name, name:user.name, role:user.role, ts:Date.now()};
   try{ localStorage.setItem('ppc_admin_session', JSON.stringify(sessData)); }catch(e){}
-  try{
-    const exp=new Date(); exp.setFullYear(exp.getFullYear()+1);
-    document.cookie='ppc_admin_sid='+encodeURIComponent(JSON.stringify(sessData))+'; expires='+exp.toUTCString()+'; path=/; SameSite=Lax';
-  }catch(e){}
   try{ if(db) set(ref(db,'sessions/admin/kamran'), {name:user.name, ts:Date.now(), active:true}).catch(()=>{}); }catch(e){}
 
   const adminLogin = document.getElementById('admin-login');
@@ -3711,7 +3688,6 @@ function showApp(user) {
 
   // GitHub token varsa yüklə
   if(!localStorage.getItem('ppc_gh_token')) {
-    // Token yoxdursa topbar-da xəbərdarlıq göstər
     setTimeout(()=>{
       const tbr = document.getElementById('tb-actions');
       if(tbr && !document.getElementById('token-warn')) {
@@ -3734,27 +3710,23 @@ window.doAdminLogin = async function() {
   if(!email||!pass){err.textContent='Email və şifrəni daxil edin';err.style.display='block';return;}
   btn.disabled=true; btn.textContent='Yüklənir...'; err.style.display='none';
 
-  // Firebase Auth ilə giriş et
+  // ✅ Yalnız Firebase Auth — hardcoded şifrə yoxdur
   try {
     await signInWithEmailAndPassword(auth, email, pass);
     // onAuthStateChanged avtomatik showApp-ı çağıracaq
   } catch(e) {
-    // Firebase Auth olmadıqda local yoxla
-    const localUser = ADMIN_USERS.find(u=>u.email===email&&u.pass===pass);
-    if(localUser){
-      showApp(localUser);
-    } else {
-      err.textContent = 'Email və ya şifrə yanlışdır';
-      err.style.display='block';
-      btn.disabled=false; btn.textContent='Daxil ol';
-    }
+    let msg = 'Email və ya şifrə yanlışdır';
+    if(e.code === 'auth/too-many-requests') msg = 'Çox cəhd. Bir qədər sonra yenidən cəhd edin.';
+    if(e.code === 'auth/user-not-found') msg = 'Bu email tapılmadı';
+    err.textContent = msg;
+    err.style.display='block';
+    btn.disabled=false; btn.textContent='Daxil ol';
   }
 };
 
 window.doAdminLogout = async function() {
   try{ if(auth) await signOut(auth); }catch(e){}
   try{ localStorage.removeItem('ppc_admin_session'); }catch(e){}
-  try{ document.cookie='ppc_admin_sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; }catch(e){}
   try{ if(db) set(ref(db,'sessions/admin/kamran'),{active:false,ts:Date.now()}).catch(()=>{}); }catch(e){}
   showLogin();
   document.getElementById('al-email').value='';
@@ -3767,13 +3739,22 @@ window.doAdminLogout = async function() {
 (async function checkSession(){
   if(!auth){ showLogin(); return; }
 
-  // Firebase Auth vəziyyəti dəyişəndə — bu refresh-də də işləyir
   onAuthStateChanged(auth, user => {
     if(user){
-      const u = ADMIN_USERS.find(x=>x.email===user.email) || {
+      // Admin email-lərini yoxla (yalnız tanınan adminlər daxil olsun)
+      const ADMIN_EMAILS = ['kamran@gmail.com']; // Buraya admin Gmail-lərini əlavə edin
+      if(!ADMIN_EMAILS.includes(user.email)) {
+        // Admin deyil — çıxış et
+        signOut(auth).catch(()=>{});
+        showLogin();
+        const err = document.getElementById('al-err');
+        if(err){ err.textContent='Bu hesab admin panelinə girişi yoxdur.'; err.style.display='block'; }
+        return;
+      }
+      const u = {
         email: user.email,
-        name:  user.email.split('@')[0],
-        role:  'Admin'
+        name:  user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1),
+        role:  'Sistem Admini · PPC'
       };
       showApp(u);
     } else {
