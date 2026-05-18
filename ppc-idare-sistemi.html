@@ -3742,9 +3742,8 @@ window.doAdminLogout = async function() {
   onAuthStateChanged(auth, user => {
     if(user){
       // Admin email-lərini yoxla (yalnız tanınan adminlər daxil olsun)
-      const ADMIN_EMAILS = ['kamran@gmail.com']; // Buraya admin Gmail-lərini əlavə edin
+      const ADMIN_EMAILS = ['bykamran@gmail.com'];
       if(!ADMIN_EMAILS.includes(user.email)) {
-        // Admin deyil — çıxış et
         signOut(auth).catch(()=>{});
         showLogin();
         const err = document.getElementById('al-err');
