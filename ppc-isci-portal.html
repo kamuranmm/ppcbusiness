@@ -310,10 +310,25 @@ s.parentNode.insertBefore(g,s);}(document,"script"));
         <div class="login-logo-sub">İşçi Portalı</div>
       </div>
       <div class="login-title">Xoş gəldiniz</div>
-      <div class="login-desc">İstifadəçi adı və şifrənizlə daxil olun</div>
+      <div class="login-desc">Gmail və şifrənizlə daxil olun</div>
       <div class="login-err" id="login-err"></div>
-      <label class="lf-label">İstifadəçi adı</label>
-      <input class="lf-input" id="li-username" type="text" placeholder="leyla_aliyeva"
+
+      <!-- Google ilə giriş -->
+      <button onclick="doGoogleSignIn()" id="google-login-btn"
+        style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;background:#fff;border:1.5px solid rgba(255,255,255,.2);border-radius:10px;color:#1a1a1a;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px;font-family:inherit;transition:.15s"
+        onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.1 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5 13 5 4 14 4 25s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 16.1 19 13 24 13c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5 16.3 5 9.7 9.1 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c4.9 0 9.3-1.9 12.7-4.9l-5.9-5c-1.7 1.3-3.9 2-6.8 2-5.2 0-9.6-3.5-11.2-8.3L5.9 34c3.3 5.9 9.7 11 18.1 11z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l5.9 5c-.4.4 6-4.4 6-14.4 0-1.3-.1-2.6-.4-3.9z"/></svg>
+        Google ilə daxil ol
+      </button>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+        <span style="font-size:11px;color:rgba(255,255,255,.3)">və ya</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+      </div>
+
+      <label class="lf-label">Email (Gmail)</label>
+      <input class="lf-input" id="li-username" type="email" placeholder="leyla.aliyeva@gmail.com"
         onkeydown="if(event.key==='Enter')document.getElementById('li-pass').focus()">
       <label class="lf-label">Şifrə</label>
       <input class="lf-input" id="li-pass" type="password" placeholder="••••••••"
@@ -325,9 +340,23 @@ s.parentNode.insertBefore(g,s);}(document,"script"));
     <!-- ── QEYDİYYAT PANELİ ── -->
     <div id="panel-reg" class="login-box" style="display:none">
       <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:4px">Yeni Qeydiyyat</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:18px">Formanı doldurun. Admin təsdiqindən sonra daxil ola bilərsiniz.</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:14px">Formanı doldurun. Admin təsdiqindən sonra daxil ola bilərsiniz.</div>
       <div id="reg-err" style="display:none;background:rgba(217,79,61,.15);border:1px solid rgba(217,79,61,.4);border-radius:8px;padding:10px;font-size:12px;color:#F87171;margin-bottom:12px"></div>
       <div id="reg-ok" style="display:none;background:rgba(46,139,87,.15);border:1px solid rgba(46,139,87,.4);border-radius:8px;padding:12px;font-size:12.5px;color:#6EE7B7;margin-bottom:12px;text-align:center"></div>
+
+      <!-- Google ilə sürətli qeydiyyat -->
+      <button onclick="doGoogleSignIn()" 
+        style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;background:#fff;border:1.5px solid rgba(255,255,255,.2);border-radius:10px;color:#1a1a1a;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px;font-family:inherit;transition:.15s"
+        onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.1 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 35 13 5 4 14 4 25s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 16.1 19 13 24 13c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5 16.3 5 9.7 9.1 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c4.9 0 9.3-1.9 12.7-4.9l-5.9-5c-1.7 1.3-3.9 2-6.8 2-5.2 0-9.6-3.5-11.2-8.3L5.9 34c3.3 5.9 9.7 11 18.1 11z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l5.9 5c-.4.4 6-4.4 6-14.4 0-1.3-.1-2.6-.4-3.9z"/></svg>
+        Google ilə sürətli qeydiyyat
+      </button>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+        <span style="font-size:11px;color:rgba(255,255,255,.3)">və ya email ilə</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+      </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
@@ -360,8 +389,8 @@ s.parentNode.insertBefore(g,s);}(document,"script"));
       </select>
       <label class="lf-label">Telefon</label>
       <input class="lf-input" id="rg-tel" type="tel" placeholder="+994 50 123 45 67">
-      <label class="lf-label">İstifadəçi adı * <span style="font-size:10px;opacity:.5">(giriş üçün)</span></label>
-      <input class="lf-input" id="rg-username" placeholder="leyla_aliyeva" oninput="this.value=this.value.replace(/[^a-zA-Z0-9_]/g,'').toLowerCase()">
+      <label class="lf-label">Email (Gmail) * <span style="font-size:10px;opacity:.5">(giriş üçün)</span></label>
+      <input class="lf-input" id="rg-username" type="email" placeholder="leyla.aliyeva@gmail.com">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <label class="lf-label">Şifrə *</label>
@@ -693,7 +722,9 @@ s.parentNode.insertBefore(g,s);}(document,"script"));
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, get, update, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const googleProvider = new GoogleAuthProvider();
 
 const firebaseConfig = {
   apiKey: "AIzaSyD-m3D563Lf4sx3bpe0MxdbiZqHRP_0ATw",
@@ -818,8 +849,168 @@ function sortedW(){ return [...S.workers].sort((a,b)=>getPts(b.id)-getPts(a.id))
 function pct(a,b){ return b?Math.round(a/b*100):0; }
 function myRank(){ return sortedW().findIndex(w=>w.id===ME?.id)+1; }
 
-// ── QEYDİYYAT ────────────────────────────────────────────────────────────────
-window.switchTab = function(tab) {
+// ── GOOGLE GİRİŞ ─────────────────────────────────────────────────────────────
+window.doGoogleSignIn = async function() {
+  const errEl = document.getElementById('login-err');
+  if(errEl) { errEl.style.display='none'; }
+
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    // onAuthStateChanged avtomatik işləyəcək
+    // Yeni istifadəçidirsə orada müəyyən olunacaq
+  } catch(err) {
+    let msg = 'Google girişi uğursuz oldu.';
+    if(err.code === 'auth/popup-closed-by-user')    msg = 'Google pəncərəsi bağlandı. Yenidən cəhd edin.';
+    if(err.code === 'auth/popup-blocked')           msg = 'Brauzer pop-up-u blokladı. Pop-up-lara icazə verin.';
+    if(err.code === 'auth/cancelled-popup-request') return; // Eyni vaxtda iki klik — ignore et
+    if(errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+  }
+};
+
+// ── YENİ GOOGLE İSTİFADƏÇİSİ — VƏZİFƏ/FİLİAL SEÇİM MODALI ─────────────────
+// Google-la ilk dəfə girən işçinin əlavə məlumatlarını toplar
+function showGoogleNewUserModal(firebaseUser) {
+  // Köhnə varsa sil
+  const old = document.getElementById('google-newuser-modal');
+  if(old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'google-newuser-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(18,40,72,.85);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  overlay.innerHTML = `
+    <div style="background:#1a2d4e;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px 24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:20px">
+        <img src="${firebaseUser.photoURL||'ppc-icon-192.png'}" 
+          onerror="this.src='ppc-icon-192.png'"
+          style="width:56px;height:56px;border-radius:50%;border:2px solid rgba(255,255,255,.2);margin-bottom:10px;display:block;margin-left:auto;margin-right:auto">
+        <div style="font-size:15px;font-weight:700;color:#fff">${firebaseUser.displayName||'Xoş gəldiniz'}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:2px">${firebaseUser.email}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.35);margin-top:10px;padding:8px 12px;background:rgba(255,255,255,.05);border-radius:8px">
+          ✅ Google hesabı təsdiqləndi. Zəhmət olmasa işlə bağlı məlumatları doldurun.
+        </div>
+      </div>
+
+      <div id="gnu-err" style="display:none;background:rgba(217,79,61,.15);border:1px solid rgba(217,79,61,.4);border-radius:8px;padding:10px;font-size:12px;color:#F87171;margin-bottom:12px"></div>
+
+      <!-- Ad / Soyad (Google-dan alınıbsa avtomatik doldurulur) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label class="lf-label">Ad *</label>
+          <input class="lf-input" id="gnu-ad" placeholder="Leyla"
+            value="${(firebaseUser.displayName||'').split(' ')[0]||''}">
+        </div>
+        <div>
+          <label class="lf-label">Soyad *</label>
+          <input class="lf-input" id="gnu-soyad" placeholder="Əliyeva"
+            value="${(firebaseUser.displayName||'').split(' ').slice(1).join(' ')||''}">
+        </div>
+      </div>
+      <label class="lf-label">Ata adı</label>
+      <input class="lf-input" id="gnu-ata" placeholder="Kamran" style="margin-bottom:10px">
+
+      <label class="lf-label">Vəzifə *</label>
+      <select class="lf-select" id="gnu-vezife" style="margin-bottom:10px">
+        <option value="">— Seçin —</option>
+        <option>Psixoloq</option><option>Baş Psixoloq</option>
+        <option>Zəng Mərkəzi Operatoru</option><option>Satış Meneceri</option>
+        <option>Marketinq Meneceri</option><option>Sosial Media Meneceri</option>
+        <option>Loqoped</option><option>İdman Müəllimi</option>
+        <option>Resepsion</option><option>HR Mütəxəssisi</option>
+        <option>Layihə Meneceri</option><option>Digər</option>
+      </select>
+
+      <label class="lf-label">Filial *</label>
+      <select class="lf-select" id="gnu-filial" style="margin-bottom:10px">
+        <option value="">— Seçin —</option>
+        <option>Azadlıq (Baş Ofis)</option><option>Nərimanov</option>
+        <option>Xırdalan</option><option>Sumqayıt</option>
+        <option>Gəncə</option><option>Quba</option><option>Lənkəran</option>
+      </select>
+
+      <label class="lf-label">Telefon</label>
+      <input class="lf-input" id="gnu-tel" type="tel" placeholder="+994 50 123 45 67" style="margin-bottom:16px">
+
+      <button id="gnu-btn" onclick="submitGoogleNewUser('${firebaseUser.uid}','${firebaseUser.email}')"
+        class="btn-login">
+        Müraciət Göndər
+      </button>
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="cancelGoogleSignIn()" 
+          style="background:none;border:none;color:rgba(255,255,255,.3);font-size:11px;cursor:pointer;font-family:inherit">
+          ← Ləğv et və çıx
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+window.cancelGoogleSignIn = async function() {
+  await signOut(auth).catch(()=>{});
+  const modal = document.getElementById('google-newuser-modal');
+  if(modal) modal.remove();
+};
+
+window.submitGoogleNewUser = async function(uid, email) {
+  const ad     = document.getElementById('gnu-ad').value.trim();
+  const soyad  = document.getElementById('gnu-soyad').value.trim();
+  const ata    = document.getElementById('gnu-ata').value.trim();
+  const vezife = document.getElementById('gnu-vezife').value;
+  const filial = document.getElementById('gnu-filial').value;
+  const tel    = document.getElementById('gnu-tel').value.trim();
+  const errEl  = document.getElementById('gneu-err') || document.getElementById('gneu-err');
+  const btn    = document.getElementById('gnu-btn');
+  const gnuErr = document.getElementById('gnu-err');
+
+  if(!ad||!soyad||!vezife||!filial) {
+    if(gnuErr){ gnuErr.textContent='Mütləq sahələri (*) doldurun'; gnuErr.style.display='block'; }
+    return;
+  }
+  if(gnuErr) gnuErr.style.display='none';
+  btn.disabled=true; btn.textContent='Göndərilir...';
+
+  try {
+    const muraciat = {
+      id:       uid,
+      uid:      uid,
+      ad, soyad, ata, vezife, filial, tel,
+      username: email.split('@')[0],
+      email,
+      fullName: ad+' '+soyad,
+      status:   'pending',
+      provider: 'google',
+      date:     new Date().toISOString().slice(0,10),
+      ts:       Date.now()
+    };
+    await set(ref(db,'isci_muraciatleri/'+uid), muraciat);
+
+    // Modal-ı gözləmə ekranı ilə əvəz et
+    const modal = document.getElementById('google-newuser-modal');
+    if(modal) modal.remove();
+
+    // Sign out — admin təsdiq edənə qədər
+    await signOut(auth);
+
+    // Login ekranında mesaj göstər
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display  = 'none';
+    const loginErr = document.getElementById('login-err');
+    if(loginErr) {
+      loginErr.innerHTML = '✅ <strong>Müraciətiniz göndərildi!</strong><br><span style="font-size:11px">Admin təsdiqlədikdən sonra Google hesabınızla daxil ola bilərsiniz.</span>';
+      loginErr.style.display = 'block';
+      loginErr.style.background = 'rgba(46,139,87,.15)';
+      loginErr.style.borderColor = 'rgba(46,139,87,.4)';
+      loginErr.style.color = '#6EE7B7';
+    }
+  } catch(e) {
+    if(gnuErr){ gnuErr.textContent='Xəta: '+e.message; gnuErr.style.display='block'; }
+    btn.disabled=false; btn.textContent='Müraciət Göndər';
+  }
+};
+
+
   const isLogin = tab==='login';
   document.getElementById('panel-login').style.display = isLogin ? 'block' : 'none';
   document.getElementById('panel-reg').style.display   = isLogin ? 'none'  : 'block';
@@ -832,53 +1023,34 @@ window.switchTab = function(tab) {
 };
 
 window.doLogin = async function() {
-  const username = document.getElementById('li-username').value.trim().toLowerCase();
-  const pass     = document.getElementById('li-pass').value;
-  const btn      = document.getElementById('li-btn');
-  const errEl    = document.getElementById('login-err');
-  if (!username || !pass) {
-    errEl.textContent = 'İstifadəçi adı və şifrəni daxil edin';
+  const email = document.getElementById('li-username').value.trim().toLowerCase();
+  const pass  = document.getElementById('li-pass').value;
+  const btn   = document.getElementById('li-btn');
+  const errEl = document.getElementById('login-err');
+  if (!email || !pass) {
+    errEl.textContent = 'Email və şifrəni daxil edin';
+    errEl.style.display = 'block'; return;
+  }
+  if (!email.includes('@')) {
+    errEl.textContent = 'Düzgün email daxil edin (məs: leyla@gmail.com)';
     errEl.style.display = 'block'; return;
   }
   btn.disabled = true; btn.textContent = 'Yüklənir...';
   errEl.style.display = 'none';
 
   try {
-    // Firebase Auth email formatı: username@ppc.az
-    const email = username + '@ppc.az';
+    // Firebase Auth — email + şifrə ilə giriş
     await signInWithEmailAndPassword(auth, email, pass);
-    // onAuthStateChanged avtomatik işləyəcək — enterApp() orada çağırılır
+    // onAuthStateChanged avtomatik işləyəcək
   } catch(err) {
-    // Firebase Auth xətası — köhnə sistem ilə yoxla (müraciət siyahısı)
-    try {
-      const murSnap = await get(ref(db, 'isci_muraciatleri'));
-      const muraciatler = murSnap.val() || {};
-      const approved = Object.values(muraciatler).find(m =>
-        m.status === 'approved' &&
-        (m.username||'').toLowerCase() === username &&
-        m.pass === pass
-      );
-      if (approved) {
-        // Firebase Auth-da hesab yoxdur — yarat
-        const email = username + '@ppc.az';
-        try {
-          await createUserWithEmailAndPassword(auth, email, pass);
-          // onAuthStateChanged işləyəcək
-        } catch(createErr) {
-          if (createErr.code === 'auth/email-already-in-use') {
-            await signInWithEmailAndPassword(auth, email, pass);
-          } else throw createErr;
-        }
-      } else {
-        errEl.textContent = 'İstifadəçi adı və ya şifrə yanlışdır. Hələ təsdiqlənməyibsə gözləyin.';
-        errEl.style.display = 'block';
-        btn.disabled = false; btn.textContent = 'Daxil ol';
-      }
-    } catch(e2) {
-      errEl.textContent = 'Giriş xətası. İnternet bağlantınızı yoxlayın.';
-      errEl.style.display = 'block';
-      btn.disabled = false; btn.textContent = 'Daxil ol';
-    }
+    let msg = 'Email və ya şifrə yanlışdır.';
+    if(err.code === 'auth/user-not-found')   msg = 'Bu email ilə qeydiyyat tapılmadı.';
+    if(err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = 'Şifrə yanlışdır.';
+    if(err.code === 'auth/too-many-requests') msg = 'Çox giriş cəhdi. Bir qədər sonra yenidən cəhd edin.';
+    if(err.code === 'auth/invalid-email')    msg = 'Email formatı yanlışdır.';
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Daxil ol';
   }
 };
 
@@ -889,7 +1061,7 @@ window.doRegister = async function() {
   const vezife   = document.getElementById('rg-vezife').value;
   const filial   = document.getElementById('rg-filial').value;
   const tel      = document.getElementById('rg-tel').value.trim();
-  const username = document.getElementById('rg-username').value.trim().toLowerCase();
+  const email    = document.getElementById('rg-username').value.trim().toLowerCase();
   const pass     = document.getElementById('rg-pass').value;
   const pass2    = document.getElementById('rg-pass2').value;
   const errEl    = document.getElementById('reg-err');
@@ -899,11 +1071,11 @@ window.doRegister = async function() {
   errEl.style.display='none'; okEl.style.display='none';
 
   // Validasiya
-  if(!ad||!soyad||!vezife||!filial||!username||!pass){
+  if(!ad||!soyad||!vezife||!filial||!email||!pass){
     errEl.textContent='Mütləq sahələri (*) doldurun'; errEl.style.display='block'; return;
   }
-  if(username.length<3){
-    errEl.textContent='İstifadəçi adı ən az 3 simvol olmalıdır'; errEl.style.display='block'; return;
+  if(!email.includes('@') || !email.includes('.')) {
+    errEl.textContent='Düzgün email daxil edin (məs: leyla@gmail.com)'; errEl.style.display='block'; return;
   }
   if(pass.length<6){
     errEl.textContent='Şifrə ən az 6 simvol olmalıdır'; errEl.style.display='block'; return;
@@ -915,36 +1087,60 @@ window.doRegister = async function() {
   btn.disabled=true; btn.textContent='Göndərilir...';
 
   try {
-    // Username unikallığını yoxla
+    // ── ADDIM 1: Email unikallığını yoxla ────────────────────────────────
     const snap = await get(ref(db,'isci_muraciatleri'));
     const existing = snap.val() || {};
-    const usernameExists = Object.values(existing).some(m=>
-      (m.username||'').toLowerCase()===username
+    const emailExists = Object.values(existing).some(m=>
+      (m.email||'').toLowerCase()===email
     );
-    if(usernameExists){
-      errEl.textContent='Bu istifadəçi adı artıq mövcuddur. Başqa ad seçin.';
+    if(emailExists){
+      errEl.textContent='Bu email artıq qeydiyyatdadır. Başqa email seçin.';
       errEl.style.display='block';
       btn.disabled=false; btn.textContent='Müraciət Göndər';
       return;
     }
 
-    // Firebase-ə qeydiyyat müraciəti yaz
-    const muraciatId = 'mur_'+Date.now();
+    // ── ADDIM 2: Firebase Auth-da hesab aç (şifrə yalnız burada qalır) ──
+    let uid;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      uid = cred.user.uid;
+    } catch(authErr) {
+      if(authErr.code === 'auth/email-already-in-use') {
+        errEl.textContent='Bu email artıq qeydiyyatdadır. Daxil olmağa çalışın.';
+      } else if(authErr.code === 'auth/weak-password') {
+        errEl.textContent='Şifrə çox sadədir. Daha güclü şifrə seçin.';
+      } else if(authErr.code === 'auth/invalid-email') {
+        errEl.textContent='Email formatı yanlışdır.';
+      } else {
+        errEl.textContent='Hesab açma xətası: '+authErr.message;
+      }
+      errEl.style.display='block';
+      btn.disabled=false; btn.textContent='Müraciət Göndər';
+      return;
+    }
+
+    // ── ADDIM 3: Müraciəti Firebase DB-yə yaz — ŞİFRƏSİZ ────────────────
+    const muraciatId = uid;
+    const username   = email.split('@')[0]; // Display üçün
     const muraciat = {
-      id: muraciatId,
+      id:       muraciatId,
+      uid:      uid,
       ad, soyad, ata, vezife, filial, tel,
-      username, pass,
+      username,
+      email,
       fullName: ad+' '+soyad,
-      status: 'pending',
-      date: new Date().toISOString().slice(0,10),
-      ts: Date.now()
+      status:   'pending',
+      date:     new Date().toISOString().slice(0,10),
+      ts:       Date.now()
     };
     await set(ref(db,'isci_muraciatleri/'+muraciatId), muraciat);
 
-    // UI yenilə
-    okEl.innerHTML = '✓ Müraciətiniz göndərildi!<br><span style="font-size:11px;opacity:.7">Admin tərəfindən nəzərdən keçiriləcək. Təsdiqləndikdən sonra @'+username+' ilə daxil ola bilərsiniz.</span>';
+    // ── ADDIM 4: Dərhal çıxış et — admin təsdiq edənə qədər giriş yoxdur
+    await signOut(auth);
+
+    okEl.innerHTML = '✓ Müraciətiniz göndərildi!<br><span style="font-size:11px;opacity:.7">Admin tərəfindən nəzərdən keçiriləcək. Təsdiqləndikdən sonra <b>'+email+'</b> ilə daxil ola bilərsiniz.</span>';
     okEl.style.display='block';
-    // Formu təmizlə
     ['rg-ad','rg-soyad','rg-ata','rg-tel','rg-username','rg-pass','rg-pass2'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value='';
     });
@@ -1143,41 +1339,88 @@ function listenNotifications(wid) {
 // Firebase Auth vəziyyəti dəyişəndə çağırılır (giriş, çıxış, səhifə yenilənməsi)
 onAuthStateChanged(auth, async (firebaseUser) => {
   if (!firebaseUser) {
-    // İstifadəçi yoxdur — login ekranını göstər
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-screen').style.display  = 'none';
     return;
   }
 
-  // Firebase istifadəçi var — məlumatları yüklə
+  // Firebase istifadəçi var — əvvəlcə approval statusunu yoxla
+  try {
+    const murSnap = await get(ref(db, 'isci_muraciatleri/' + firebaseUser.uid));
+    const muraciat = murSnap.val();
+
+    if (!muraciat) {
+      // DB-də yoxdur — yeni Google istifadəçisi?
+      const isGoogle = firebaseUser.providerData.some(p => p.providerId === 'google.com');
+      if(isGoogle) {
+        // Modal göstər — vəzifə/filial seçsin
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-screen').style.display   = 'none';
+        showGoogleNewUserModal(firebaseUser);
+        return;
+      }
+      // Email qeydiyyatı amma DB-də yoxdur
+      await signOut(auth);
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display  = 'none';
+      const errEl = document.getElementById('login-err');
+      errEl.textContent = '⏳ Hesabınız hələ admin tərəfindən aktiv edilməyib.';
+      errEl.style.display = 'block';
+      const btn = document.getElementById('li-btn');
+      if(btn){ btn.disabled=false; btn.textContent='Daxil ol'; }
+      return;
+    }
+
+    if (muraciat.status === 'pending') {
+      await signOut(auth);
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display  = 'none';
+      const errEl = document.getElementById('login-err');
+      errEl.innerHTML = '⏳ <strong>Müraciətiniz admin tərəfindən nəzərdən keçirilir.</strong><br><span style="font-size:11px">Təsdiqləndikdən sonra daxil ola bilərsiniz.</span>';
+      errEl.style.display = 'block';
+      const btn = document.getElementById('li-btn');
+      if(btn){ btn.disabled=false; btn.textContent='Daxil ol'; }
+      return;
+    }
+
+    if (muraciat.status === 'rejected') {
+      await signOut(auth);
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display  = 'none';
+      const errEl = document.getElementById('login-err');
+      errEl.textContent = '❌ Müraciətiniz rədd edilib. Admin ilə əlaqə saxlayın.';
+      errEl.style.display = 'block';
+      const btn = document.getElementById('li-btn');
+      if(btn){ btn.disabled=false; btn.textContent='Daxil ol'; }
+      return;
+    }
+  } catch(e) {
+    console.log('[Auth] Müraciət yoxlama xətası:', e.message);
+  }
+
+  // Approval OK — məlumatları yüklə
   try {
     const snap = await get(ref(db, 'ppcdata'));
     const d = snap.val() || {};
     if (d.workers?.length)  S.workers   = d.workers;
-    // tasks ayrıca tasks/ kökündən startListener ilə oxunur
     if (d.hedefler?.length) S.hedefler  = d.hedefler;
     if (d.rehberler?.length)S.rehberler = d.rehberler;
   } catch(e) {}
 
   if (!S.workers.length) S.workers = DEMO_WORKERS;
 
-  // Firebase email-ə görə işçini tap
   const email = firebaseUser.email;
   let w = S.workers.find(x => x.email === email);
 
-  // Tapılmadısa Firebase DB-dən username ilə axtar
   if (!w) {
     try {
-      const murSnap = await get(ref(db, 'isci_muraciatleri'));
-      const muraciatler = murSnap.val() || {};
-      const approved = Object.values(muraciatler).find(m =>
-        m.status === 'approved' && m.username + '@ppc.az' === email
-      );
-      if (approved) {
-        const wid = approved.workerId || ('w_mur_'+(approved.id||'').replace('mur_',''));
+      const murSnap = await get(ref(db, 'isci_muraciatleri/' + firebaseUser.uid));
+      const approved = murSnap.val();
+      if (approved && approved.status === 'approved') {
+        const wid = approved.workerId || firebaseUser.uid;
         w = S.workers.find(x => x.id === wid) || {
           id:       wid,
-          name:     approved.ad + ' ' + approved.soyad,
+          name:     approved.fullName || approved.ad + ' ' + approved.soyad,
           role:     approved.vezife,
           dept:     approved.vezife,
           branch:   approved.filial,
@@ -1185,18 +1428,44 @@ onAuthStateChanged(auth, async (firebaseUser) => {
           username: approved.username,
           email:    email
         };
+      } else if (!approved) {
+        const allSnap = await get(ref(db, 'isci_muraciatleri'));
+        const allMur  = allSnap.val() || {};
+        const byEmail = Object.values(allMur).find(m =>
+          m.status === 'approved' && (m.email||'').toLowerCase() === email
+        );
+        if (byEmail) {
+          const wid = byEmail.workerId || ('w_mur_' + (byEmail.id||'').replace('mur_',''));
+          w = S.workers.find(x => x.id === wid) || {
+            id:       wid,
+            name:     byEmail.fullName || byEmail.ad + ' ' + byEmail.soyad,
+            role:     byEmail.vezife,
+            dept:     byEmail.vezife,
+            branch:   byEmail.filial,
+            color:    '#1E5FAD',
+            username: byEmail.username,
+            email:    email
+          };
+        }
       }
     } catch(e) {}
   }
 
   if (w) {
     ME = w;
+    const modal = document.getElementById('google-newuser-modal');
+    if(modal) modal.remove();
     startListener();
     enterApp();
   } else {
-    // Firebase-də hesab var amma işçi tapılmadı
+    await signOut(auth);
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-screen').style.display  = 'none';
+    const errEl = document.getElementById('login-err');
+    errEl.innerHTML = '⏳ Hesabınız hələ admin tərəfindən aktiv edilməyib.';
+    errEl.style.display = 'block';
+    const btn = document.getElementById('li-btn');
+    if(btn){ btn.disabled=false; btn.textContent='Daxil ol'; }
   }
 });
 
